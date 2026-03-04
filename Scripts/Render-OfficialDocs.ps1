@@ -65,7 +65,7 @@ Copy-Item -Path (Join-Path -Path $sourceImagesDir -ChildPath '*') -Destination $
 Write-Host '== Step 3: Rendering custom queries ==' -ForegroundColor Cyan
 [string] $queriesOutputPath = Join-Path -Path $opengraphRefDir -ChildPath 'queries.mdx'
 [string] $queriesGitHubPath = '{0}/tree/main/Src/Queries' -f $GitHubBaseUrl
-& (Join-Path -Path $PSScriptRoot -ChildPath 'Render-CustomQueries.ps1') -ExtensionName $extensionName -OutputFilePath $queriesOutputPath -QueriesPath $queriesGitHubPath -TitlePrefix $TitlePrefix -OfficialDocs
+& (Join-Path -Path $PSScriptRoot -ChildPath 'Render-CustomQueries.ps1') -ExtensionName $extensionName -OutputFilePath $queriesOutputPath -QueriesLinkPath $queriesGitHubPath -TitlePrefix $TitlePrefix -OfficialDocs
 
 # Step 4: Render privilege zone rules MDX
 Write-Host '== Step 4: Rendering privilege zone rules ==' -ForegroundColor Cyan
@@ -85,6 +85,6 @@ Write-Host '== Step 6: Rendering schema ==' -ForegroundColor Cyan
 # Step 7: Render official docs navigation JSON
 Write-Host '== Step 7: Rendering docs.json ==' -ForegroundColor Cyan
 [string] $extensionOfficialDocsDir = Join-Path -Path $officialDocsDir -ChildPath ('opengraph/extensions/{0}' -f $extensionSlug)
-& (Join-Path -Path $PSScriptRoot -ChildPath 'Render-OfficialDocsJson.ps1') -ExtensionName $extensionName -ExtensionRootDir $extensionOfficialDocsDir
+& (Join-Path -Path $PSScriptRoot -ChildPath 'Render-OfficialDocsJson.ps1') -ExtensionName $extensionName -DocsExtensionsDir $extensionOfficialDocsDir
 
 Write-Host '== Done ==' -ForegroundColor Green

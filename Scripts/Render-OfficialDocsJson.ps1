@@ -17,27 +17,26 @@ param (
     [ValidateNotNullOrEmpty()]
     [string] $ExtensionName,
 
-    [Parameter(Mandatory = $false)]
+    [Parameter(Mandatory = $true)]
     [ValidateNotNullOrEmpty()]
-    [string] $OfficialDocsDir = (Join-Path -Path $PSScriptRoot -ChildPath '../../Documentation/OfficialDocs/')
+    [string] $DocsExtensionsDir
 )
 
 Set-StrictMode -Version Latest
 
 [string] $extensionSlug = $ExtensionName.ToLower()
-[string] $extensionRootDir = (Join-Path -Path $OfficialDocsDir -ChildPath ('opengraph/extensions/{0}' -f $extensionSlug))
 
-if (-not (Test-Path -Path $extensionRootDir -PathType Container)) {
-    throw "Extension directory not found: $extensionRootDir"
+if (-not (Test-Path -Path $DocsExtensionsDir -PathType Container)) {
+    throw "Extension directory not found: $DocsExtensionsDir"
 }
 
-[string] $outputPath = (Join-Path -Path $OfficialDocsDir -ChildPath 'docs.json')
-[string] $referenceDir = Join-Path -Path $extensionRootDir -ChildPath 'reference'
+[string] $outputPath = (Join-Path -Path $DocsExtensionsDir -ChildPath 'docs.json')
+[string] $referenceDir = Join-Path -Path $DocsExtensionsDir -ChildPath 'reference'
 [string] $nodesDir = Join-Path -Path $referenceDir -ChildPath 'nodes'
 [string] $edgesDir = Join-Path -Path $referenceDir -ChildPath 'edges'
 
 # MDX files directly in the extension root (e.g. schema.mdx)
-[string[]] $rootPages = @(Get-ChildItem -Path $extensionRootDir -Filter '*.mdx' -File |
+[string[]] $rootPages = @(Get-ChildItem -Path $DocsExtensionsDir -Filter '*.mdx' -File |
         Sort-Object -Property BaseName |
         ForEach-Object { "opengraph/extensions/$extensionSlug/$($_.BaseName)" })
 
