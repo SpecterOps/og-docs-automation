@@ -525,7 +525,8 @@ function New-NodeIcon {
                 try {
                     $fillPaint.IsAntialias = $true
                     $fillPaint.Style = [SkiaSharp.SKPaintStyle]::Fill
-                    $fillPaint.Color = [SkiaSharp.SKColor]::Parse($Color)
+                    # Normalize 0x-prefixed colors to #-prefixed for SkiaSharp
+                    $fillPaint.Color = [SkiaSharp.SKColor]::Parse(($Color -replace '^0x', '#'))
 
                     [SkiaSharp.SKPaint] $strokePaint = [SkiaSharp.SKPaint]::new()
                     try {
