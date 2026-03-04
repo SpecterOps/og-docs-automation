@@ -7,6 +7,10 @@
 
 [CmdletBinding()]
 param (
+    [Parameter(Mandatory = $true)]
+    [ValidateNotNullOrEmpty()]
+    [string] $ExtensionName,
+
     [Parameter(Mandatory = $false)]
     [ValidateNotNullOrEmpty()]
     [string] $InputDirectory = (Join-Path -Path $PSScriptRoot -ChildPath '../Src/PrivilegeZoneRules/'),
@@ -18,10 +22,6 @@ param (
     [Parameter(Mandatory = $false)]
     [ValidateNotNullOrEmpty()]
     [string] $RulesLinkPath = '../Src/PrivilegeZoneRules',
-
-    [Parameter(Mandatory = $false)]
-    [ValidateNotNullOrEmpty()]
-    [string] $ExtensionName = 'OktaHound',
 
     [Parameter(Mandatory = $false)]
     [string] $TitlePrefix = '',

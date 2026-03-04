@@ -1,17 +1,15 @@
 <#
 .SYNOPSIS
     Converts a BloodHound extension file into markdown (*.md) or MDX.
-.NOTES
-    Version: 3.1
 #>
 
 #Requires -Version 5.1
 
 [CmdletBinding()]
 param (
-    [Parameter(Mandatory = $false)]
+    [Parameter(Mandatory = $true)]
     [ValidateNotNullOrEmpty()]
-    [string] $InputPath = (Join-Path -Path $PSScriptRoot -ChildPath '../Src/Extensions/bhce-okta-extension.json'),
+    [string] $InputPath,
 
     [Parameter(Mandatory = $false)]
     [ValidateNotNullOrEmpty()]

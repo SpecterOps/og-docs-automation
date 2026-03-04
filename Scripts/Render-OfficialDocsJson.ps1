@@ -13,37 +13,40 @@
 
 [CmdletBinding()]
 param (
-    [Parameter(Mandatory = $false)]
+    [Parameter(Mandatory = $true)]
     [ValidateNotNullOrEmpty()]
-    [string] $ExtensionRootDir = (Join-Path -Path $PSScriptRoot -ChildPath '../Documentation/OfficialDocs/opengraph/extensions/oktahound'),
+    [string] $ExtensionName,
 
     [Parameter(Mandatory = $false)]
     [ValidateNotNullOrEmpty()]
-    [string] $OutputPath = (Join-Path -Path $PSScriptRoot -ChildPath '../Documentation/OfficialDocs/docs.json')
+    [string] $OfficialDocsDir = (Join-Path -Path $PSScriptRoot -ChildPath '../Documentation/OfficialDocs/')
 )
 
 Set-StrictMode -Version Latest
 
-if (-not (Test-Path -Path $ExtensionRootDir -PathType Container)) {
-    throw "Extension directory not found: $ExtensionRootDir"
+[string] $extensionSlug = $ExtensionName.ToLower()
+[string] $extensionRootDir = (Join-Path -Path $OfficialDocsDir -ChildPath ('opengraph/extensions/{0}' -f $extensionSlug))
+
+if (-not (Test-Path -Path $extensionRootDir -PathType Container)) {
+    throw "Extension directory not found: $extensionRootDir"
 }
 
-[string] $extensionName = Split-Path -Path $ExtensionRootDir -Leaf
-[string] $referenceDir = Join-Path -Path $ExtensionRootDir -ChildPath 'reference'
+[string] $outputPath = (Join-Path -Path $OfficialDocsDir -ChildPath 'docs.json')
+[string] $referenceDir = Join-Path -Path $extensionRootDir -ChildPath 'reference'
 [string] $nodesDir = Join-Path -Path $referenceDir -ChildPath 'nodes'
 [string] $edgesDir = Join-Path -Path $referenceDir -ChildPath 'edges'
 
 # MDX files directly in the extension root (e.g. schema.mdx)
-[string[]] $rootPages = @(Get-ChildItem -Path $ExtensionRootDir -Filter '*.mdx' -File |
+[string[]] $rootPages = @(Get-ChildItem -Path $extensionRootDir -Filter '*.mdx' -File |
         Sort-Object -Property BaseName |
-        ForEach-Object { "opengraph/extensions/$extensionName/$($_.BaseName)" })
+        ForEach-Object { "opengraph/extensions/$extensionSlug/$($_.BaseName)" })
 
 # MDX files directly in reference/ but not in nodes/ or edges/ (e.g. queries.mdx, privilege-zone-rules.mdx)
 [string[]] $referencePages = @()
 if (Test-Path -Path $referenceDir -PathType Container) {
     $referencePages = @(Get-ChildItem -Path $referenceDir -Filter '*.mdx' -File |
             Sort-Object -Property BaseName |
-            ForEach-Object { "opengraph/extensions/$extensionName/reference/$($_.BaseName)" })
+            ForEach-Object { "opengraph/extensions/$extensionSlug/reference/$($_.BaseName)" })
 }
 
 # MDX files in reference/nodes/
@@ -51,7 +54,7 @@ if (Test-Path -Path $referenceDir -PathType Container) {
 if (Test-Path -Path $nodesDir -PathType Container) {
     $nodePages = @(Get-ChildItem -Path $nodesDir -Filter '*.mdx' -File |
             Sort-Object -Property BaseName |
-            ForEach-Object { "opengraph/extensions/$extensionName/reference/nodes/$($_.BaseName)" })
+            ForEach-Object { "opengraph/extensions/$extensionSlug/reference/nodes/$($_.BaseName)" })
 }
 
 # MDX files in reference/edges/
@@ -59,11 +62,11 @@ if (Test-Path -Path $nodesDir -PathType Container) {
 if (Test-Path -Path $edgesDir -PathType Container) {
     $edgePages = @(Get-ChildItem -Path $edgesDir -Filter '*.mdx' -File |
             Sort-Object -Property BaseName |
-            ForEach-Object { "opengraph/extensions/$extensionName/reference/edges/$($_.BaseName)" })
+            ForEach-Object { "opengraph/extensions/$extensionSlug/reference/edges/$($_.BaseName)" })
 }
 
 $docs = [ordered]@{
-    group = $extensionName
+    group = $ExtensionName
     pages = @(
         $rootPages +
         @(
@@ -90,4 +93,4 @@ $docs = [ordered]@{
 [string] $json = $docs | ConvertTo-Json -Depth 8
 $json = $json -replace "`r?`n", "`r`n"
 
-Set-Content -Path $OutputPath -Value $json -Encoding UTF8 -Verbose
+Set-Content -Path $outputPath -Value $json -Encoding UTF8 -Verbose

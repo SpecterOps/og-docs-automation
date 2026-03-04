@@ -24,7 +24,6 @@
     subdirectory under the temp directory.
 .NOTES
     Author: Michael Grafnetter
-    Version: 3.3
 #>
 
 #requires -Version 7
@@ -32,9 +31,9 @@
 [CmdletBinding()]
 [OutputType([void])]
 param(
-    [Parameter(Mandatory = $false)]
+    [Parameter(Mandatory = $true)]
     [ValidateNotNullOrEmpty()]
-    [string] $InputFile = (Join-Path -Path $PSScriptRoot -ChildPath '../Src/Extensions/bhce-okta-extension.json'),
+    [string] $InputFile,
 
     [Parameter(Mandatory = $false)]
     [ValidateNotNullOrEmpty()]
