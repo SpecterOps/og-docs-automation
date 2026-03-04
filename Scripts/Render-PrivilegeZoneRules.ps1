@@ -13,11 +13,11 @@ param (
 
     [Parameter(Mandatory = $false)]
     [ValidateNotNullOrEmpty()]
-    [string] $InputDirectory = (Join-Path -Path $PSScriptRoot -ChildPath '../Src/PrivilegeZoneRules/'),
+    [string] $InputDirectory = (Join-Path -Path $PSScriptRoot -ChildPath '../../Src/PrivilegeZoneRules/'),
 
     [Parameter(Mandatory = $false)]
     [ValidateNotNullOrEmpty()]
-    [string] $OutputFilePath = (Join-Path -Path $PSScriptRoot -ChildPath '../Documentation/PrivilegeZoneRules.md'),
+    [string] $OutputFilePath = (Join-Path -Path $PSScriptRoot -ChildPath '../../Documentation/PrivilegeZoneRules.md'),
 
     [Parameter(Mandatory = $false)]
     [ValidateNotNullOrEmpty()]

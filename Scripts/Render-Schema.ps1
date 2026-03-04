@@ -13,7 +13,7 @@ param (
 
     [Parameter(Mandatory = $false)]
     [ValidateNotNullOrEmpty()]
-    [string] $OutputPath = (Join-Path -Path $PSScriptRoot -ChildPath '../Documentation/Schema.md'),
+    [string] $OutputPath = (Join-Path -Path $PSScriptRoot -ChildPath '../../Documentation/Schema.md'),
 
     [Parameter(Mandatory = $false)]
     [AllowNull()]

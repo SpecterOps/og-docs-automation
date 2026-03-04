@@ -13,11 +13,11 @@ param (
 
     [Parameter(Mandatory = $false)]
     [ValidateNotNullOrEmpty()]
-    [string] $InputDirectory = (Join-Path -Path $PSScriptRoot -ChildPath '../Src/Queries/'),
+    [string] $InputDirectory = (Join-Path -Path $PSScriptRoot -ChildPath '../../Src/Queries/'),
 
     [Parameter(Mandatory = $false)]
     [ValidateNotNullOrEmpty()]
-    [string] $OutputFilePath = (Join-Path -Path $PSScriptRoot -ChildPath '../Documentation/Queries.md'),
+    [string] $OutputFilePath = (Join-Path -Path $PSScriptRoot -ChildPath '../../Documentation/Queries.md'),
 
     [Parameter(Mandatory = $false)]
     [ValidateNotNullOrEmpty()]

@@ -36,7 +36,7 @@ if ([string]::IsNullOrEmpty($GitHubBaseUrl)) {
 }
 $GitHubBaseUrl = $GitHubBaseUrl.TrimEnd('/')
 
-[string] $repoRoot = Join-Path -Path $PSScriptRoot -ChildPath '..'
+[string] $repoRoot = Join-Path -Path $PSScriptRoot -ChildPath '../..'
 [string] $officialDocsDir = Join-Path -Path $repoRoot -ChildPath 'Documentation/OfficialDocs'
 [string] $imagesOutputDirRelPath = '/images/extensions/{0}/reference' -f $extensionSlug
 [string] $imagesOutputDirFullPath = Join-Path -Path $officialDocsDir -ChildPath $imagesOutputDirRelPath

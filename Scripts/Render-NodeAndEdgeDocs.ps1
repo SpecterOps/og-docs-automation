@@ -10,7 +10,7 @@
 
     The following transformations are applied to the description content:
     - H1 headers are removed (the MDX frontmatter title is used instead).
-    - Links to ../NodeDescriptions/ are rewritten using the DocsBasePath parameter.
+    - Links to ../../NodeDescriptions/ are rewritten using the DocsBasePath parameter.
     - Links to other markdown files have their .md extension stripped.
     - GitHub-flavored callouts (NOTE, IMPORTANT, WARNING, TIP, CAUTION) are converted to Mintlify components.
     - Node documentation includes Inbound Edges and Outbound Edges sections (inserted between Overview and
@@ -27,15 +27,15 @@ param (
 
     [Parameter(Mandatory = $false)]
     [ValidateNotNullOrEmpty()]
-    [string] $NodeDescriptionsDir = (Join-Path -Path $PSScriptRoot -ChildPath '../Documentation/NodeDescriptions'),
+    [string] $NodeDescriptionsDir = (Join-Path -Path $PSScriptRoot -ChildPath '../../Documentation/NodeDescriptions'),
 
     [Parameter(Mandatory = $false)]
     [ValidateNotNullOrEmpty()]
-    [string] $EdgeDescriptionsDir = (Join-Path -Path $PSScriptRoot -ChildPath '../Documentation/EdgeDescriptions'),
+    [string] $EdgeDescriptionsDir = (Join-Path -Path $PSScriptRoot -ChildPath '../../Documentation/EdgeDescriptions'),
 
     [Parameter(Mandatory = $false)]
     [ValidateNotNullOrEmpty()]
-    [string] $OutputRootDir = (Join-Path -Path $PSScriptRoot -ChildPath '../Documentation/OfficialDocs/opengraph/extensions'),
+    [string] $OutputRootDir = (Join-Path -Path $PSScriptRoot -ChildPath '../../Documentation/OfficialDocs/opengraph/extensions'),
 
     [Parameter(Mandatory = $false)]
     [ValidateNotNullOrEmpty()]

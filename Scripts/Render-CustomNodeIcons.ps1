@@ -37,7 +37,7 @@ param(
 
     [Parameter(Mandatory = $false)]
     [ValidateNotNullOrEmpty()]
-    [string] $OutputDir = (Join-Path -Path $PSScriptRoot -ChildPath '../Documentation/Icons'),
+    [string] $OutputDir = (Join-Path -Path $PSScriptRoot -ChildPath '../../Documentation/Icons'),
 
     [Parameter(Mandatory = $false)]
     [ValidateRange(16, 512)]

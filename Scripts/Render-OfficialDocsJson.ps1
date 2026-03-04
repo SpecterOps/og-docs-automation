@@ -19,7 +19,7 @@ param (
 
     [Parameter(Mandatory = $false)]
     [ValidateNotNullOrEmpty()]
-    [string] $OfficialDocsDir = (Join-Path -Path $PSScriptRoot -ChildPath '../Documentation/OfficialDocs/')
+    [string] $OfficialDocsDir = (Join-Path -Path $PSScriptRoot -ChildPath '../../Documentation/OfficialDocs/')
 )
 
 Set-StrictMode -Version Latest
