@@ -85,11 +85,23 @@ if ($OfficialDocs) {
     } else {
         $GitHubBaseUrl.TrimEnd('/')
     }
-    [string] $extensionFilePath = '{0}/blob/main/Src/Extensions/{1}' -f $effectiveGitHubBaseUrl, $extensionFileName
+    # Compute repo-relative path for the GitHub link
+    [string] $gitRoot = (& git -C (Split-Path -Parent $ExtensionPath) rev-parse --show-toplevel) -replace '\\', '/'
+    [string] $extensionAbsolute = (Get-Item -Path $ExtensionPath).FullName -replace '\\', '/'
+    [string] $extensionRepoRelPath = $extensionAbsolute.Substring($gitRoot.Length + 1)
+    [string] $extensionFilePath = '{0}/blob/main/{1}' -f $effectiveGitHubBaseUrl, $extensionRepoRelPath
     [bool] $useMintlifyCallouts = $true
 } else {
     [string] $linkExtension = '.md'
-    [string] $extensionFilePath = '../Src/Extensions/{0}' -f $extensionFileName
+    # Compute relative path from the output directory to the extension file
+    [string] $outputDir = (Get-Item -Path (Split-Path -Parent $OutputPath)).FullName
+    [string] $resolvedExtensionPath = (Get-Item -Path $ExtensionPath).FullName
+    Push-Location -Path $outputDir
+    try {
+        [string] $extensionFilePath = (Resolve-Path -Relative -Path $resolvedExtensionPath) -replace '\\', '/'
+    } finally {
+        Pop-Location
+    }
     [bool] $useMintlifyCallouts = $false
 }
 
