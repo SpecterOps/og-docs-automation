@@ -63,7 +63,7 @@ function Get-ConfigPath([string] $key, [string] $default = '') {
 
 [string] $ExtensionPath    = Resolve-ConfigPath $config.extensionPath
 [string] $GitHubBaseUrl    = Get-ConfigValue 'gitHubBaseUrl'
-[string] $StripTitlePrefix  = Get-ConfigValue 'stripTitlePrefix'
+[string] $StripTitlePrefix = Get-ConfigValue 'stripTitlePrefix'
 [string] $QueriesDir       = Get-ConfigPath  'queriesDir'
 [string] $ZoneRulesDir     = Get-ConfigPath  'zoneRulesDir'
 [string] $NodeDescDir      = Get-ConfigPath  'nodeDescriptionsDir' 'Documentation/NodeDescriptions'
@@ -121,7 +121,7 @@ if ($Mode -eq 'Official') {
     # Step 3: Render custom queries MDX
     Write-Host '== Step 3: Rendering custom queries ==' -ForegroundColor Cyan
     [string] $queriesOutputPath = Join-Path -Path $opengraphRefDir -ChildPath 'queries.mdx'
-    [string] $queriesGitHubPath = '{0}/tree/main/Src/Queries' -f $GitHubBaseUrl
+    [string] $queriesGitHubPath = '{0}/tree/main/{1}' -f $GitHubBaseUrl, (Get-ConfigValue 'queriesDir' 'Src/Queries')
     [hashtable] $customQueriesParams = @{
         ExtensionName   = $extensionName
         OutputPath      = $queriesOutputPath
@@ -135,7 +135,7 @@ if ($Mode -eq 'Official') {
     # Step 4: Render privilege zone rules MDX
     Write-Host '== Step 4: Rendering privilege zone rules ==' -ForegroundColor Cyan
     [string] $privilegeZonePath = Join-Path -Path $opengraphRefDir -ChildPath 'privilege-zone-rules.mdx'
-    [string] $rulesGitHubPath = '{0}/tree/main/Src/PrivilegeZoneRules' -f $GitHubBaseUrl
+    [string] $rulesGitHubPath = '{0}/tree/main/{1}' -f $GitHubBaseUrl, (Get-ConfigValue 'zoneRulesDir' 'Src/PrivilegeZoneRules')
     [hashtable] $privilegeZoneParams = @{
         ExtensionName = $extensionName
         OutputPath    = $privilegeZonePath
