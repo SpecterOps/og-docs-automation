@@ -9,7 +9,7 @@
 param (
     [Parameter(Mandatory = $true)]
     [ValidateNotNullOrEmpty()]
-    [string] $InputPath,
+    [string] $ExtensionPath,
 
     [Parameter(Mandatory = $false)]
     [ValidateNotNullOrEmpty()]
@@ -67,7 +67,7 @@ function Get-KindMarkdownLink {
 }
 
 # Parse the JSON file
-[psobject] $json = Get-Content -Path $InputPath | ConvertFrom-Json
+[psobject] $json = Get-Content -Path $ExtensionPath | ConvertFrom-Json
 [psobject[]] $nodeKinds = @($json.node_kinds | Sort-Object -Property name)
 [psobject[]] $relationshipKinds = @($json.relationship_kinds | Sort-Object -Property name)
 [string] $schemaName = $json.schema.name
@@ -76,7 +76,7 @@ function Get-KindMarkdownLink {
 } else {
     $schemaName
 }
-[string] $extensionFileName = Split-Path -Leaf $InputPath
+[string] $extensionFileName = Split-Path -Leaf $ExtensionPath
 
 if ($OfficialDocs) {
     [string] $linkExtension = ''

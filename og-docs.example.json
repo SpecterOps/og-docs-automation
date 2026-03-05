@@ -1,0 +1,12 @@
+{
+    "extensionPath": "schema.json",
+    "gitHubBaseUrl": "https://github.com/SpecterOps/OktaHound",
+    "titlePrefix": "Okta: ",
+    "queriesDir": "Src/Queries",
+    "zoneRulesDir": "Src/PrivilegeZoneRules",
+    "nodeDescriptionsDir": "Documentation/NodeDescriptions",
+    "edgeDescriptionsDir": "Documentation/EdgeDescriptions",
+    "imagesDir": "Documentation/Images",
+    "iconSize": 32,
+    "iconScale": 0.55
+}

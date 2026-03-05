@@ -23,7 +23,7 @@
 param (
     [Parameter(Mandatory = $true)]
     [ValidateNotNullOrEmpty()]
-    [string] $InputPath,
+    [string] $ExtensionPath,
 
     [Parameter(Mandatory = $false)]
     [ValidateNotNullOrEmpty()]
@@ -35,7 +35,7 @@ param (
 
     [Parameter(Mandatory = $false)]
     [ValidateNotNullOrEmpty()]
-    [string] $OutputRootDir = (Join-Path -Path $PSScriptRoot -ChildPath '../../Documentation/OfficialDocs/opengraph/extensions'),
+    [string] $OutputDir = (Join-Path -Path $PSScriptRoot -ChildPath '../../Documentation/OfficialDocs/opengraph/extensions'),
 
     [Parameter(Mandatory = $false)]
     [ValidateNotNullOrEmpty()]
@@ -406,16 +406,16 @@ description: {1}
 }
 
 # Parse extension schema
-[psobject] $json = Get-Content -Path $InputPath | ConvertFrom-Json
+[psobject] $json = Get-Content -Path $ExtensionPath | ConvertFrom-Json
 [psobject[]] $nodeKinds = @($json.node_kinds | Sort-Object -Property name)
 [psobject[]] $relationshipKinds = @($json.relationship_kinds | Sort-Object -Property name)
 [string] $extensionName = [string] $json.schema.name
 
 if ([string]::IsNullOrWhiteSpace($extensionName)) {
-    throw "schema.name is missing in extension file: $InputPath"
+    throw "schema.name is missing in extension file: $ExtensionPath"
 }
 
-[string] $referenceRoot = Join-Path -Path (Join-Path -Path $OutputRootDir -ChildPath $extensionName.ToLower()) -ChildPath 'reference'
+[string] $referenceRoot = Join-Path -Path (Join-Path -Path $OutputDir -ChildPath $extensionName.ToLower()) -ChildPath 'reference'
 [string] $nodesOutputDir = Join-Path -Path $referenceRoot -ChildPath 'nodes'
 [string] $edgesOutputDir = Join-Path -Path $referenceRoot -ChildPath 'edges'
 

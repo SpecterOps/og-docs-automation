@@ -13,11 +13,11 @@ param (
 
     [Parameter(Mandatory = $false)]
     [ValidateNotNullOrEmpty()]
-    [string] $InputDirectory = (Join-Path -Path $PSScriptRoot -ChildPath '../../Src/PrivilegeZoneRules/'),
+    [string] $InputDir = (Join-Path -Path $PSScriptRoot -ChildPath '../../Src/PrivilegeZoneRules/'),
 
     [Parameter(Mandatory = $false)]
     [ValidateNotNullOrEmpty()]
-    [string] $OutputFilePath = (Join-Path -Path $PSScriptRoot -ChildPath '../../Documentation/PrivilegeZoneRules.md'),
+    [string] $OutputPath = (Join-Path -Path $PSScriptRoot -ChildPath '../../Documentation/PrivilegeZoneRules.md'),
 
     [Parameter(Mandatory = $false)]
     [ValidateNotNullOrEmpty()]
@@ -57,7 +57,7 @@ Each rule is defined in a JSON file located in the [PrivilegeZoneRules]({0}) dir
 
 '@ -f $RulesLinkPath, $ExtensionName
 
-Get-ChildItem -File -Path $InputDirectory -Filter '*.json' | Sort-Object -Property Name | ForEach-Object {
+Get-ChildItem -File -Path $InputDir -Filter '*.json' | Sort-Object -Property Name | ForEach-Object {
     # Parse the JSON content of the privilege zone rule file
     [psobject] $json = Get-Content -Path $PSItem.FullName | ConvertFrom-Json
 
@@ -93,4 +93,4 @@ This rule is defined in the [{3}]({4}/{3}) file.
 # Normalize line endings to CRLF for Git working tree
 $markdown = $markdown -replace "`r?`n", "`r`n"
 
-Set-Content -Path $OutputFilePath -Value $markdown -Encoding UTF8 -Verbose
+Set-Content -Path $OutputPath -Value $markdown -Encoding UTF8 -Verbose

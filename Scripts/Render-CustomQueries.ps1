@@ -13,11 +13,11 @@ param (
 
     [Parameter(Mandatory = $false)]
     [ValidateNotNullOrEmpty()]
-    [string] $InputDirectory = (Join-Path -Path $PSScriptRoot -ChildPath '../../Src/Queries/'),
+    [string] $InputDir = (Join-Path -Path $PSScriptRoot -ChildPath '../../Src/Queries/'),
 
     [Parameter(Mandatory = $false)]
     [ValidateNotNullOrEmpty()]
-    [string] $OutputFilePath = (Join-Path -Path $PSScriptRoot -ChildPath '../../Documentation/Queries.md'),
+    [string] $OutputPath = (Join-Path -Path $PSScriptRoot -ChildPath '../../Documentation/Queries.md'),
 
     [Parameter(Mandatory = $false)]
     [ValidateNotNullOrEmpty()]
@@ -74,7 +74,7 @@ that are bundled with the `{1}` collector.
 '@ -f $QueriesLinkPath, $ExtensionName
 }
 
-Get-ChildItem -File -Path $InputDirectory -Filter '*.json' | Sort-Object -Property Name | ForEach-Object {
+Get-ChildItem -File -Path $InputDir -Filter '*.json' | Sort-Object -Property Name | ForEach-Object {
     # Parse the JSON content of the cypher query file
     [psobject] $json = Get-Content -Path $PSItem.FullName | ConvertFrom-Json
 
@@ -110,4 +110,4 @@ This query can be imported into BloodHound from the [{3}]({4}/{3}) file.
 # Normalize line endings to CRLF for Git working tree
 $markdown = $markdown -replace "`r?`n", "`r`n"
 
-Set-Content -Path $OutputFilePath -Value $markdown -Encoding UTF8 -Verbose
+Set-Content -Path $OutputPath -Value $markdown -Encoding UTF8 -Verbose

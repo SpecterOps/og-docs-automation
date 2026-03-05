@@ -13,7 +13,7 @@
 .PARAMETER IconScale
     The relative scale for the Font Awesome icon within the circle. Default is 0.55.
 
-.PARAMETER InputFile
+.PARAMETER ExtensionPath
     The path to the JSON schema file. Default is the hardcoded main extension file.
 
 .PARAMETER OutputDir
@@ -33,7 +33,7 @@
 param(
     [Parameter(Mandatory = $true)]
     [ValidateNotNullOrEmpty()]
-    [string] $InputFile,
+    [string] $ExtensionPath,
 
     [Parameter(Mandatory = $false)]
     [ValidateNotNullOrEmpty()]
@@ -90,7 +90,7 @@ function Main {
     }
 
     # Parse the JSON file
-    [psobject] $json = Get-Content -Path $InputFile | ConvertFrom-Json
+    [psobject] $json = Get-Content -Path $ExtensionPath | ConvertFrom-Json
     [NodeDefinition[]] $nodeDefinitions = Get-NodeDefinitions -Json $json
 
     # Generate PNG icons for each node kind
