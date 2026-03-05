@@ -88,6 +88,23 @@ Write-Host "== Mode: $Mode | Extension: $extensionName ==" -ForegroundColor Cyan
 # Official mode
 # ---------------------------------------------------------------------------
 if ($Mode -eq 'Official') {
+    # Step 0a: Run schema consistency check
+    Write-Host '== Step 0a: Checking schema consistency ==' -ForegroundColor Cyan
+    $savedErrorPref = $ErrorActionPreference
+    $ErrorActionPreference = 'Continue'
+    & (Join-Path -Path $PSScriptRoot -ChildPath 'Test-SchemaConsistency.ps1') -ConfigFile $ConfigFile
+    [int] $consistencyIssues = $LASTEXITCODE
+    $ErrorActionPreference = $savedErrorPref
+    if ($consistencyIssues -ne 0) {
+        Write-Host ''
+        [string] $answer = Read-Host "Schema consistency check found $consistencyIssues issue(s). Continue anyway? (y/N)"
+        if ($answer -notin @('y', 'Y', 'yes', 'Yes', 'YES')) {
+            Write-Host 'Aborted.' -ForegroundColor Red
+            return
+        }
+        Write-Host ''
+    }
+
     [string] $officialDocsDir = Join-Path -Path $repoRoot -ChildPath 'Documentation/OfficialDocs'
     [string] $imagesOutputDirRelPath = '/images/extensions/{0}/reference' -f $extensionSlug
     [string] $imagesOutputDirFullPath = Join-Path -Path $officialDocsDir -ChildPath $imagesOutputDirRelPath
