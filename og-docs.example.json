@@ -1,7 +1,7 @@
 {
     "extensionPath": "schema.json",
     "gitHubBaseUrl": "https://github.com/SpecterOps/OktaHound",
-    "titlePrefix": "Okta: ",
+    "stripTitlePrefix": "Okta: ",
     "queriesDir": "Src/Queries",
     "zoneRulesDir": "Src/PrivilegeZoneRules",
     "nodeDescriptionsDir": "Documentation/NodeDescriptions",

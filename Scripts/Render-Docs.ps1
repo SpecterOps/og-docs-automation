@@ -63,7 +63,7 @@ function Get-ConfigPath([string] $key, [string] $default = '') {
 
 [string] $ExtensionPath    = Resolve-ConfigPath $config.extensionPath
 [string] $GitHubBaseUrl    = Get-ConfigValue 'gitHubBaseUrl'
-[string] $TitlePrefix      = Get-ConfigValue 'titlePrefix'
+[string] $StripTitlePrefix  = Get-ConfigValue 'stripTitlePrefix'
 [string] $QueriesDir       = Get-ConfigPath  'queriesDir'
 [string] $ZoneRulesDir     = Get-ConfigPath  'zoneRulesDir'
 [string] $NodeDescDir      = Get-ConfigPath  'nodeDescriptionsDir' 'Documentation/NodeDescriptions'
@@ -126,7 +126,7 @@ if ($Mode -eq 'Official') {
         ExtensionName   = $extensionName
         OutputPath      = $queriesOutputPath
         QueriesLinkPath = $queriesGitHubPath
-        TitlePrefix     = $TitlePrefix
+        StripTitlePrefix = $StripTitlePrefix
         OfficialDocs    = $true
     }
     if ($QueriesDir) { $customQueriesParams['InputDir'] = $QueriesDir }
@@ -140,7 +140,7 @@ if ($Mode -eq 'Official') {
         ExtensionName = $extensionName
         OutputPath    = $privilegeZonePath
         RulesLinkPath = $rulesGitHubPath
-        TitlePrefix   = $TitlePrefix
+        StripTitlePrefix = $StripTitlePrefix
         OfficialDocs  = $true
     }
     if ($ZoneRulesDir) { $privilegeZoneParams['InputDir'] = $ZoneRulesDir }
@@ -179,7 +179,7 @@ if ($Mode -eq 'Local') {
         ExtensionName   = $extensionName
         OutputPath      = (Join-Path -Path $docsDir -ChildPath 'Queries.md')
         QueriesLinkPath = $queriesLinkPath
-        TitlePrefix     = $TitlePrefix
+        StripTitlePrefix = $StripTitlePrefix
     }
     if ($QueriesDir) { $customQueriesParams['InputDir'] = $QueriesDir }
     & (Join-Path -Path $PSScriptRoot -ChildPath 'Render-CustomQueries.ps1') @customQueriesParams
@@ -191,7 +191,7 @@ if ($Mode -eq 'Local') {
         ExtensionName = $extensionName
         OutputPath    = (Join-Path -Path $docsDir -ChildPath 'PrivilegeZoneRules.md')
         RulesLinkPath = $zoneRulesLinkPath
-        TitlePrefix   = $TitlePrefix
+        StripTitlePrefix = $StripTitlePrefix
     }
     if ($ZoneRulesDir) { $privilegeZoneParams['InputDir'] = $ZoneRulesDir }
     & (Join-Path -Path $PSScriptRoot -ChildPath 'Render-PrivilegeZoneRules.ps1') @privilegeZoneParams

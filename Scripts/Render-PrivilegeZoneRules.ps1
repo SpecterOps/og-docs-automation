@@ -24,7 +24,7 @@ param (
     [string] $RulesLinkPath = '../Src/PrivilegeZoneRules',
 
     [Parameter(Mandatory = $false)]
-    [string] $TitlePrefix = '',
+    [string] $StripTitlePrefix = '',
 
     [Parameter(Mandatory = $false)]
     [switch] $OfficialDocs
@@ -62,10 +62,10 @@ Get-ChildItem -File -Path $InputDir -Filter '*.json' | Sort-Object -Property Nam
     [psobject] $json = Get-Content -Path $PSItem.FullName | ConvertFrom-Json
 
     # Remove optional title prefix for cleaner headings
-    [string] $title = if ([string]::IsNullOrEmpty($TitlePrefix)) {
+    [string] $title = if ([string]::IsNullOrEmpty($StripTitlePrefix)) {
         $json.name
     } else {
-        $json.name -replace [regex]::Escape($TitlePrefix)
+        $json.name -replace [regex]::Escape($StripTitlePrefix)
     }
 
     # Sanitize line breaks in description and cypher

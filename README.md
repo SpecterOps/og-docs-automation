@@ -63,7 +63,7 @@ The `og-docs.json` file configures all paths and settings. Only `extensionPath` 
 |-----|------|----------|---------|-------------|
 | `extensionPath` | string | Yes | — | Path to the extension schema JSON file (e.g. `schema.json`). |
 | `gitHubBaseUrl` | string | No | `https://github.com/SpecterOps/{ExtensionName}` | Base URL of the GitHub repository. Used to generate source links in official docs. |
-| `titlePrefix` | string | No | `""` | Prefix stripped from query and rule names in headings (e.g. `"MyExt: "`). |
+| `stripTitlePrefix` | string | No | `""` | Prefix stripped from query and rule names in headings (e.g. `"MyExt: "`). |
 | `queriesDir` | string | No | `Src/Queries` | Directory containing custom Cypher query JSON files. |
 | `zoneRulesDir` | string | No | `Src/PrivilegeZoneRules` | Directory containing privilege zone rule JSON files. |
 | `nodeDescriptionsDir` | string | No | `Documentation/NodeDescriptions` | Directory containing per-node `.md` description files. Used by Render-NodeAndEdgeDocs in official mode. |
