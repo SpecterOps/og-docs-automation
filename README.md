@@ -96,3 +96,29 @@ Each script can also be invoked directly with explicit parameters for one-off us
 
 - PowerShell 5.1+ (PowerShell 7+ required for icon rendering)
 - Internet access on first run (icon rendering downloads NuGet packages and Font Awesome SVGs)
+
+## Troubleshooting
+
+### SkiaSharp fails on Linux
+
+If icon rendering fails with `The type initializer for 'SkiaSharp.SKImageInfo' threw an exception`, install the required system libraries:
+
+**Debian / Ubuntu:**
+
+```bash
+sudo apt-get install -y libfontconfig1
+```
+
+**RHEL / Fedora:**
+
+```bash
+sudo dnf install -y fontconfig
+```
+
+**Alpine:**
+
+```bash
+apk add fontconfig
+```
+
+The `SkiaSharp.NativeAssets.Linux.NoDependencies` NuGet package bundles most native dependencies statically, but still requires `libfontconfig` from the system.

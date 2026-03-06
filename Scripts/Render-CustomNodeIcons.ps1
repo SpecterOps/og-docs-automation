@@ -77,11 +77,11 @@ function Main {
     Import-SkiaDependencies -CacheRoot $PackageCachePath
 
     if (-not ('SkiaSharp.SKBitmap' -as [type])) {
-        throw 'SkiaSharp types are not available. Ensure SkiaSharp dependencies loaded correctly.'
+        throw 'SkiaSharp types are not available. On Linux, ensure libfontconfig1 is installed (see README troubleshooting).'
     }
 
     if (-not ('Svg.Skia.SKSvg' -as [type])) {
-        throw 'Svg.Skia types are not available. Ensure Svg.Skia dependencies loaded correctly.'
+        throw 'Svg.Skia types are not available. Ensure the NuGet packages downloaded correctly (check internet connectivity).'
     }
 
     # Create output directory if it doesn't exist
@@ -377,6 +377,34 @@ function Import-SkiaDependencies {
         if (-not ($env:PATH -split ';' | Where-Object { $PSItem -eq $nativePath })) {
             $env:PATH = "$nativePath;$env:PATH"
         }
+    }
+
+    # Validate that the SkiaSharp native library loads correctly
+    try {
+        [void][SkiaSharp.SKImageInfo]::new(1, 1)
+    }
+    catch {
+        [string] $hint = if ($IsLinux) {
+            "On Debian/Ubuntu, install the required system libraries:`n" +
+            "  sudo apt-get install -y libfontconfig1`n" +
+            "On RHEL/Fedora:`n" +
+            "  sudo dnf install -y fontconfig`n" +
+            "On Alpine:`n" +
+            "  apk add fontconfig"
+        } elseif ($IsMacOS) {
+            "On macOS, install fontconfig via Homebrew:`n" +
+            "  brew install fontconfig"
+        } else {
+            'Ensure the Visual C++ Redistributable is installed.'
+        }
+
+        [string] $originalError = if ($null -ne $PSItem.Exception.InnerException) {
+            $PSItem.Exception.InnerException.Message
+        } else {
+            $PSItem.Exception.Message
+        }
+
+        throw "SkiaSharp native library failed to initialize. $hint`nOriginal error: $originalError"
     }
 }
 
