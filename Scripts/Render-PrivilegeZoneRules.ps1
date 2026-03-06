@@ -59,7 +59,23 @@ Each rule is defined in a JSON file located in the [PrivilegeZoneRules]({0}) dir
 
 Get-ChildItem -File -Path $InputDir -Filter '*.json' | Sort-Object -Property Name | ForEach-Object {
     # Parse the JSON content of the privilege zone rule file
-    [psobject] $json = Get-Content -Path $PSItem.FullName | ConvertFrom-Json
+    [psobject] $json = $null
+    try {
+        $json = Get-Content -Path $PSItem.FullName | ConvertFrom-Json
+    }
+    catch {
+        Write-Error "Failed to parse privilege zone rule file '$($PSItem.FullName)': $($_.Exception.Message)"
+        throw
+    }
+
+    if (-not $json.name) {
+        Write-Warning "Rule file '$($PSItem.FullName)' is missing required 'name' property. Skipping."
+        return
+    }
+    if (-not $json.cypher) {
+        Write-Warning "Rule file '$($PSItem.FullName)' is missing required 'cypher' property. Skipping."
+        return
+    }
 
     # Remove optional title prefix for cleaner headings
     [string] $title = if ([string]::IsNullOrEmpty($StripTitlePrefix)) {

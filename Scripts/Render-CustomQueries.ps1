@@ -76,7 +76,23 @@ that are bundled with the `{1}` collector.
 
 Get-ChildItem -File -Path $InputDir -Filter '*.json' | Sort-Object -Property Name | ForEach-Object {
     # Parse the JSON content of the cypher query file
-    [psobject] $json = Get-Content -Path $PSItem.FullName | ConvertFrom-Json
+    [psobject] $json = $null
+    try {
+        $json = Get-Content -Path $PSItem.FullName | ConvertFrom-Json
+    }
+    catch {
+        Write-Error "Failed to parse query file '$($PSItem.FullName)': $($_.Exception.Message)"
+        throw
+    }
+
+    if (-not $json.Name) {
+        Write-Warning "Query file '$($PSItem.FullName)' is missing required 'Name' property. Skipping."
+        return
+    }
+    if (-not $json.Query) {
+        Write-Warning "Query file '$($PSItem.FullName)' is missing required 'Query' property. Skipping."
+        return
+    }
 
     # Remove optional title prefix for cleaner headings
     [string] $title = if ([string]::IsNullOrEmpty($StripTitlePrefix)) {

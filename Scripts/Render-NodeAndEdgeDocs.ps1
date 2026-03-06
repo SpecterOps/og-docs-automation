@@ -201,23 +201,40 @@ function Get-EdgeSchemaMap {
         [string] $edgeName = $file.BaseName
         [psobject[]] $sources = @()
         [psobject[]] $destinations = @()
+        [bool] $hasSourceLine = $content -match '(?m)^- Source:\s*(.+)$'
 
-        if ($content -match '(?m)^- Source:\s*(.+)$') {
-            $sources = @($linkRegex.Matches($matches[1]) | ForEach-Object {
+        if ($hasSourceLine) {
+            [string] $rawSourceLine = $matches[1]
+            $sources = @($linkRegex.Matches($rawSourceLine) | ForEach-Object {
                     [PSCustomObject]@{
                         Name = $_.Groups[1].Value
                         Url  = $_.Groups[2].Value
                     }
                 })
+            if ($sources.Count -eq 0) {
+                Write-Warning "Edge '$edgeName' ($($file.Name)): '- Source:' line found but no valid markdown links could be parsed. Raw line: '$rawSourceLine'"
+            }
+        }
+        else {
+            Write-Warning "Edge '$edgeName' ($($file.Name)): missing '- Source:' line."
         }
 
-        if ($content -match '(?m)^- Destination:\s*(.+)$') {
-            $destinations = @($linkRegex.Matches($matches[1]) | ForEach-Object {
+        [bool] $hasDestLine = $content -match '(?m)^- Destination:\s*(.+)$'
+
+        if ($hasDestLine) {
+            [string] $rawDestLine = $matches[1]
+            $destinations = @($linkRegex.Matches($rawDestLine) | ForEach-Object {
                     [PSCustomObject]@{
                         Name = $_.Groups[1].Value
                         Url  = $_.Groups[2].Value
                     }
                 })
+            if ($destinations.Count -eq 0) {
+                Write-Warning "Edge '$edgeName' ($($file.Name)): '- Destination:' line found but no valid markdown links could be parsed. Raw line: '$rawDestLine'"
+            }
+        }
+        else {
+            Write-Warning "Edge '$edgeName' ($($file.Name)): missing '- Destination:' line."
         }
 
         $map[$edgeName] = [PSCustomObject]@{
@@ -280,18 +297,24 @@ function New-EdgeSectionMarkdown {
         [psobject] $schema = $EdgeSchemaMap[$edgeName]
         [string] $edgeLink = '[{0}]({1}/edges/{2})' -f $edgeName, $DocsBasePath, $edgeName.ToLower()
 
-        if ($NodeName -in $schema.Destinations.Name) {
-            [string] $sourceLinks = ($schema.Sources | ForEach-Object {
-                    '[{0}]({1})' -f $_.Name, $_.Url
-                }) -join ', '
-            $inboundRows.Add("| $edgeLink | $sourceLinks |")
-        }
+        try {
+            if ($NodeName -in $schema.Destinations.Name) {
+                [string] $sourceLinks = ($schema.Sources | ForEach-Object {
+                        '[{0}]({1})' -f $_.Name, $_.Url
+                    }) -join ', '
+                $inboundRows.Add("| $edgeLink | $sourceLinks |")
+            }
 
-        if ($NodeName -in $schema.Sources.Name) {
-            [string] $destLinks = ($schema.Destinations | ForEach-Object {
-                    '[{0}]({1})' -f $_.Name, $_.Url
-                }) -join ', '
-            $outboundRows.Add("| $edgeLink | $destLinks |")
+            if ($NodeName -in $schema.Sources.Name) {
+                [string] $destLinks = ($schema.Destinations | ForEach-Object {
+                        '[{0}]({1})' -f $_.Name, $_.Url
+                    }) -join ', '
+                $outboundRows.Add("| $edgeLink | $destLinks |")
+            }
+        }
+        catch {
+            Write-Error "Error processing edge '$edgeName' for node '$NodeName'. Sources=$($schema.Sources | ConvertTo-Json -Compress -Depth 2), Destinations=$($schema.Destinations | ConvertTo-Json -Compress -Depth 2). ScriptStackTrace: $($_.ScriptStackTrace)"
+            throw
         }
     }
 
@@ -406,7 +429,14 @@ description: {1}
 }
 
 # Parse extension schema
-[psobject] $json = Get-Content -Path $ExtensionPath | ConvertFrom-Json
+[psobject] $json = $null
+try {
+    $json = Get-Content -Path $ExtensionPath | ConvertFrom-Json
+}
+catch {
+    Write-Error "Failed to parse extension file '$ExtensionPath': $($_.Exception.Message)"
+    throw
+}
 [psobject[]] $nodeKinds = @($json.node_kinds | Sort-Object -Property name)
 [psobject[]] $relationshipKinds = @($json.relationship_kinds | Sort-Object -Property name)
 [string] $extensionName = [string] $json.schema.name
@@ -437,12 +467,18 @@ foreach ($nodeKind in $nodeKinds) {
         continue
     }
 
-    [string] $descriptionFilePath = Join-Path -Path $NodeDescriptionsDir -ChildPath "$name.md"
-    [string] $outputFilePath = Join-Path -Path $nodesOutputDir -ChildPath "$($name.ToLower()).mdx"
-    [string] $iconPath = "$IconBasePath/$($name.ToLower()).png"
-    [string] $edgeSectionMarkdown = New-EdgeSectionMarkdown -NodeName $name -EdgeSchemaMap $edgeSchemaMap
+    try {
+        [string] $descriptionFilePath = Join-Path -Path $NodeDescriptionsDir -ChildPath "$name.md"
+        [string] $outputFilePath = Join-Path -Path $nodesOutputDir -ChildPath "$($name.ToLower()).mdx"
+        [string] $iconPath = "$IconBasePath/$($name.ToLower()).png"
+        [string] $edgeSectionMarkdown = New-EdgeSectionMarkdown -NodeName $name -EdgeSchemaMap $edgeSchemaMap
 
-    New-OfficialDoc -Name $name -Description $description -DescriptionFilePath $descriptionFilePath -OutputFilePath $outputFilePath -ExtensionName $extensionName -NodeDescDirName $nodeDescDirName -IconPath $iconPath -EdgeSectionMarkdown $edgeSectionMarkdown -SiblingBasePath "$DocsBasePath/nodes"
+        New-OfficialDoc -Name $name -Description $description -DescriptionFilePath $descriptionFilePath -OutputFilePath $outputFilePath -ExtensionName $extensionName -NodeDescDirName $nodeDescDirName -IconPath $iconPath -EdgeSectionMarkdown $edgeSectionMarkdown -SiblingBasePath "$DocsBasePath/nodes"
+    }
+    catch {
+        Write-Error "Error processing node kind '$name': $($_.Exception.Message)`nScriptStackTrace: $($_.ScriptStackTrace)"
+        throw
+    }
 }
 
 foreach ($relationshipKind in $relationshipKinds) {
@@ -454,9 +490,15 @@ foreach ($relationshipKind in $relationshipKinds) {
         continue
     }
 
-    [string] $descriptionFilePath = Join-Path -Path $EdgeDescriptionsDir -ChildPath "$name.md"
-    [string] $outputFilePath = Join-Path -Path $edgesOutputDir -ChildPath "$($name.ToLower()).mdx"
-    [string] $traversable = if ([bool] $relationshipKind.is_traversable) { '✅' } else { '❌' }
+    try {
+        [string] $descriptionFilePath = Join-Path -Path $EdgeDescriptionsDir -ChildPath "$name.md"
+        [string] $outputFilePath = Join-Path -Path $edgesOutputDir -ChildPath "$($name.ToLower()).mdx"
+        [string] $traversable = if ([bool] $relationshipKind.is_traversable) { '✅' } else { '❌' }
 
-    New-OfficialDoc -Name $name -Description $description -DescriptionFilePath $descriptionFilePath -OutputFilePath $outputFilePath -ExtensionName $extensionName -NodeDescDirName $nodeDescDirName -Traversable $traversable -SiblingBasePath "$DocsBasePath/edges"
+        New-OfficialDoc -Name $name -Description $description -DescriptionFilePath $descriptionFilePath -OutputFilePath $outputFilePath -ExtensionName $extensionName -NodeDescDirName $nodeDescDirName -Traversable $traversable -SiblingBasePath "$DocsBasePath/edges"
+    }
+    catch {
+        Write-Error "Error processing relationship kind '$name': $($_.Exception.Message)`nScriptStackTrace: $($_.ScriptStackTrace)"
+        throw
+    }
 }

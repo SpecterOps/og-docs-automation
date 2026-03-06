@@ -67,7 +67,19 @@ function Get-KindMarkdownLink {
 }
 
 # Parse the JSON file
-[psobject] $json = Get-Content -Path $ExtensionPath | ConvertFrom-Json
+[psobject] $json = $null
+try {
+    $json = Get-Content -Path $ExtensionPath | ConvertFrom-Json
+}
+catch {
+    Write-Error "Failed to parse extension file '$ExtensionPath': $($_.Exception.Message)"
+    throw
+}
+
+if ([string]::IsNullOrWhiteSpace($json.schema.name)) {
+    throw "schema.name is missing in extension file: $ExtensionPath"
+}
+
 [psobject[]] $nodeKinds = @($json.node_kinds | Sort-Object -Property name)
 [psobject[]] $relationshipKinds = @($json.relationship_kinds | Sort-Object -Property name)
 [string] $schemaName = $json.schema.name
@@ -167,11 +179,17 @@ $markdown += @'
 
 # Add a table row for each node kind
 foreach ($nodeKind in $nodeKinds) {
-    # Append node-specific markdown
-    # Sample: | ![Okta_Organization](Icons/Okta_Organization.png) | Okta_Organization | Okta Organization |
-    $markdown += "`n"
-    [string] $nodeKindDisplay = Get-KindMarkdownLink -KindName $nodeKind.name -LinkBasePath $NodeLinkBasePath -Extension $linkExtension -LowercasePath:$OfficialDocs
-    $markdown += '| ![{0}]({1}/{2}.png) | {3} | {4} |' -f $nodeKind.name, $IconBasePath, $nodeKind.name.ToLower(), $nodeKindDisplay, $nodeKind.display_name
+    try {
+        # Append node-specific markdown
+        # Sample: | ![Okta_Organization](Icons/Okta_Organization.png) | Okta_Organization | Okta Organization |
+        $markdown += "`n"
+        [string] $nodeKindDisplay = Get-KindMarkdownLink -KindName $nodeKind.name -LinkBasePath $NodeLinkBasePath -Extension $linkExtension -LowercasePath:$OfficialDocs
+        $markdown += '| ![{0}]({1}/{2}.png) | {3} | {4} |' -f $nodeKind.name, $IconBasePath, $nodeKind.name.ToLower(), $nodeKindDisplay, $nodeKind.display_name
+    }
+    catch {
+        Write-Error "Error rendering schema row for node kind '$($nodeKind.name)': $($_.Exception.Message)`nScriptStackTrace: $($_.ScriptStackTrace)"
+        throw
+    }
 }
 
 $markdown += "`n`n"
@@ -184,12 +202,18 @@ $markdown += @'
 
 # Add a table row for each relationship kind
 foreach ($relationshipKind in $relationshipKinds) {
-    # Append relationship-specific markdown
-    # Sample: | OktaUserHasRole | ✅ | Indicates that a user is assigned a role in Okta. |
-    $markdown += "`n"
-    [string] $traversableIcon = if ($relationshipKind.is_traversable) { '✅' } else { '❌' }
-    [string] $relationshipKindDisplay = Get-KindMarkdownLink -KindName $relationshipKind.name -LinkBasePath $EdgeLinkBasePath -Extension $linkExtension -LowercasePath:$OfficialDocs
-    $markdown += '| {0} | {1} | {2} |' -f $relationshipKindDisplay, $traversableIcon, $relationshipKind.description
+    try {
+        # Append relationship-specific markdown
+        # Sample: | OktaUserHasRole | ✅ | Indicates that a user is assigned a role in Okta. |
+        $markdown += "`n"
+        [string] $traversableIcon = if ($relationshipKind.is_traversable) { '✅' } else { '❌' }
+        [string] $relationshipKindDisplay = Get-KindMarkdownLink -KindName $relationshipKind.name -LinkBasePath $EdgeLinkBasePath -Extension $linkExtension -LowercasePath:$OfficialDocs
+        $markdown += '| {0} | {1} | {2} |' -f $relationshipKindDisplay, $traversableIcon, $relationshipKind.description
+    }
+    catch {
+        Write-Error "Error rendering schema row for relationship kind '$($relationshipKind.name)': $($_.Exception.Message)`nScriptStackTrace: $($_.ScriptStackTrace)"
+        throw
+    }
 }
 
 # Normalize line endings to CRLF for Git working tree
