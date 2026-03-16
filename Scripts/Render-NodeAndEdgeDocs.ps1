@@ -10,7 +10,7 @@
 
     The following transformations are applied to the description content:
     - H1 headers are removed (the MDX frontmatter title is used instead).
-    - Links to ../../NodeDescriptions/ are rewritten using the DocsBasePath parameter.
+    - Links to ../../NodeDescriptions/ and ../../EdgeDescriptions/ are rewritten using the DocsBasePath parameter.
     - Links to other markdown files have their .md extension stripped.
     - GitHub-flavored callouts (NOTE, IMPORTANT, WARNING, TIP, CAUTION) are converted to Mintlify components.
     - Node documentation includes Inbound Edges and Outbound Edges sections (inserted between Overview and
@@ -49,6 +49,7 @@ param (
 Set-StrictMode -Version Latest
 
 [string] $nodeDescDirName = Split-Path -Leaf $NodeDescriptionsDir
+[string] $edgeDescDirName = Split-Path -Leaf $EdgeDescriptionsDir
 
 function ConvertTo-YamlSingleQuoted {
     [OutputType([string])]
@@ -116,6 +117,10 @@ function Convert-MarkdownLinks {
 
         [Parameter(Mandatory = $true)]
         [ValidateNotNullOrEmpty()]
+        [string] $EdgeDescDirName,
+
+        [Parameter(Mandatory = $true)]
+        [ValidateNotNullOrEmpty()]
         [string] $SiblingBasePath
     )
 
@@ -145,6 +150,7 @@ function Convert-MarkdownLinks {
 
             [string] $rewrittenPath = $linkPath -replace '\.md(?=($|[?#]))', ''
             $rewrittenPath = $rewrittenPath -replace ('^\.\.\/' + [regex]::Escape($NodeDescDirName) + '/'), ($DocsBasePath + '/nodes/')
+            $rewrittenPath = $rewrittenPath -replace ('^\.\.\/' + [regex]::Escape($EdgeDescDirName) + '/'), ($DocsBasePath + '/edges/')
             # Bare filename links (no directory separator) are sibling references
             if ($rewrittenPath -notmatch '[/\\]') {
                 $rewrittenPath = $SiblingBasePath + '/' + $rewrittenPath
@@ -372,6 +378,10 @@ function New-OfficialDoc {
         [ValidateNotNullOrEmpty()]
         [string] $NodeDescDirName,
 
+        [Parameter(Mandatory = $true)]
+        [ValidateNotNullOrEmpty()]
+        [string] $EdgeDescDirName,
+
         [Parameter(Mandatory = $false)]
         [AllowEmptyString()]
         [string] $IconPath,
@@ -406,7 +416,7 @@ function New-OfficialDoc {
     }
 
     $bodyMarkdown = Convert-ImagePaths -Markdown $bodyMarkdown -ExtensionName $ExtensionName
-    $bodyMarkdown = Convert-MarkdownLinks -Markdown $bodyMarkdown -NodeDescDirName $NodeDescDirName -SiblingBasePath $SiblingBasePath
+    $bodyMarkdown = Convert-MarkdownLinks -Markdown $bodyMarkdown -NodeDescDirName $NodeDescDirName -EdgeDescDirName $EdgeDescDirName -SiblingBasePath $SiblingBasePath
     $bodyMarkdown = Convert-Callouts -Markdown $bodyMarkdown
 
     [string] $iconLine = ''
@@ -486,7 +496,7 @@ foreach ($nodeKind in $nodeKinds) {
         [string] $iconPath = "$IconBasePath/$($name.ToLower()).png"
         [string] $edgeSectionMarkdown = New-EdgeSectionMarkdown -NodeName $name -EdgeSchemaMap $edgeSchemaMap -RelationshipKindMap $relationshipKindMap
 
-        New-OfficialDoc -Name $name -Description $description -DescriptionFilePath $descriptionFilePath -OutputFilePath $outputFilePath -ExtensionName $extensionName -NodeDescDirName $nodeDescDirName -IconPath $iconPath -EdgeSectionMarkdown $edgeSectionMarkdown -SiblingBasePath "$DocsBasePath/nodes"
+        New-OfficialDoc -Name $name -Description $description -DescriptionFilePath $descriptionFilePath -OutputFilePath $outputFilePath -ExtensionName $extensionName -NodeDescDirName $nodeDescDirName -EdgeDescDirName $edgeDescDirName -IconPath $iconPath -EdgeSectionMarkdown $edgeSectionMarkdown -SiblingBasePath "$DocsBasePath/nodes"
     }
     catch {
         Write-Error "Error processing node kind '$name': $($_.Exception.Message)`nScriptStackTrace: $($_.ScriptStackTrace)"
@@ -508,7 +518,7 @@ foreach ($relationshipKind in $relationshipKinds) {
         [string] $outputFilePath = Join-Path -Path $edgesOutputDir -ChildPath "$($name.ToLower()).mdx"
         [string] $traversable = if ([bool] $relationshipKind.is_traversable) { '✅' } else { '❌' }
 
-        New-OfficialDoc -Name $name -Description $description -DescriptionFilePath $descriptionFilePath -OutputFilePath $outputFilePath -ExtensionName $extensionName -NodeDescDirName $nodeDescDirName -Traversable $traversable -SiblingBasePath "$DocsBasePath/edges"
+        New-OfficialDoc -Name $name -Description $description -DescriptionFilePath $descriptionFilePath -OutputFilePath $outputFilePath -ExtensionName $extensionName -NodeDescDirName $nodeDescDirName -EdgeDescDirName $edgeDescDirName -Traversable $traversable -SiblingBasePath "$DocsBasePath/edges"
     }
     catch {
         Write-Error "Error processing relationship kind '$name': $($_.Exception.Message)`nScriptStackTrace: $($_.ScriptStackTrace)"
