@@ -268,8 +268,8 @@ function Format-EdgeTable {
 
     [string] $result = "`n### $Heading`n`n"
     if ($Rows.Count -gt 0) {
-        $result += "| Edge Type | $PeerColumnName |`n"
-        $result += "| --------- | $('-' * $PeerColumnName.Length) |`n"
+        $result += "| Edge Type | $PeerColumnName | Traversable | Description |`n"
+        $result += "| --------- | $('-' * $PeerColumnName.Length) | ----------- | ----------- |`n"
         $result += ($Rows -join "`n") + "`n"
     }
     else {
@@ -287,7 +287,10 @@ function New-EdgeSectionMarkdown {
         [string] $NodeName,
 
         [Parameter(Mandatory = $true)]
-        [hashtable] $EdgeSchemaMap
+        [hashtable] $EdgeSchemaMap,
+
+        [Parameter(Mandatory = $true)]
+        [hashtable] $RelationshipKindMap
     )
 
     [System.Collections.Generic.List[string]] $inboundRows = [System.Collections.Generic.List[string]]::new()
@@ -298,18 +301,22 @@ function New-EdgeSectionMarkdown {
         [string] $edgeLink = '[{0}]({1}/edges/{2})' -f $edgeName, $DocsBasePath, $edgeName.ToLower()
 
         try {
+            [psobject] $relKind = $RelationshipKindMap[$edgeName]
+            [string] $traversable = if ($relKind -and [bool] $relKind.is_traversable) { '✅' } else { '❌' }
+            [string] $edgeDescription = if ($relKind) { [string] $relKind.description } else { '' }
+
             if ($NodeName -in $schema.Destinations.Name) {
                 [string] $sourceLinks = ($schema.Sources | ForEach-Object {
                         '[{0}]({1})' -f $_.Name, $_.Url
                     }) -join ', '
-                $inboundRows.Add("| $edgeLink | $sourceLinks |")
+                $inboundRows.Add("| $edgeLink | $sourceLinks | $traversable | $edgeDescription |")
             }
 
             if ($NodeName -in $schema.Sources.Name) {
                 [string] $destLinks = ($schema.Destinations | ForEach-Object {
                         '[{0}]({1})' -f $_.Name, $_.Url
                     }) -join ', '
-                $outboundRows.Add("| $edgeLink | $destLinks |")
+                $outboundRows.Add("| $edgeLink | $destLinks | $traversable | $edgeDescription |")
             }
         }
         catch {
@@ -458,6 +465,12 @@ foreach ($directory in @($nodesOutputDir, $edgesOutputDir)) {
 # Parse edge schemas for node edge sections
 [hashtable] $edgeSchemaMap = Get-EdgeSchemaMap -EdgeDescriptionsDir $EdgeDescriptionsDir
 
+# Build a lookup table of relationship kinds by name for edge metadata
+[hashtable] $relationshipKindMap = @{}
+foreach ($relKind in $relationshipKinds) {
+    $relationshipKindMap[[string] $relKind.name] = $relKind
+}
+
 foreach ($nodeKind in $nodeKinds) {
     [string] $name = [string] $nodeKind.name
     [string] $description = [string] $nodeKind.description
@@ -471,7 +484,7 @@ foreach ($nodeKind in $nodeKinds) {
         [string] $descriptionFilePath = Join-Path -Path $NodeDescriptionsDir -ChildPath "$name.md"
         [string] $outputFilePath = Join-Path -Path $nodesOutputDir -ChildPath "$($name.ToLower()).mdx"
         [string] $iconPath = "$IconBasePath/$($name.ToLower()).png"
-        [string] $edgeSectionMarkdown = New-EdgeSectionMarkdown -NodeName $name -EdgeSchemaMap $edgeSchemaMap
+        [string] $edgeSectionMarkdown = New-EdgeSectionMarkdown -NodeName $name -EdgeSchemaMap $edgeSchemaMap -RelationshipKindMap $relationshipKindMap
 
         New-OfficialDoc -Name $name -Description $description -DescriptionFilePath $descriptionFilePath -OutputFilePath $outputFilePath -ExtensionName $extensionName -NodeDescDirName $nodeDescDirName -IconPath $iconPath -EdgeSectionMarkdown $edgeSectionMarkdown -SiblingBasePath "$DocsBasePath/nodes"
     }
