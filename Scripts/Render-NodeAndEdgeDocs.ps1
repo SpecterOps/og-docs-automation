@@ -274,8 +274,8 @@ function Format-EdgeTable {
 
     [string] $result = "`n### $Heading`n`n"
     if ($Rows.Count -gt 0) {
-        $result += "| Edge Type | $PeerColumnName | Traversable | Description |`n"
-        $result += "| --------- | $('-' * $PeerColumnName.Length) | ----------- | ----------- |`n"
+        $result += "| Edge Type | $PeerColumnName | Traversable |`n"
+        $result += "| --------- | $('-' * $PeerColumnName.Length) | ----------- |`n"
         $result += ($Rows -join "`n") + "`n"
     }
     else {
@@ -309,20 +309,19 @@ function New-EdgeSectionMarkdown {
         try {
             [psobject] $relKind = $RelationshipKindMap[$edgeName]
             [string] $traversable = if ($relKind -and [bool] $relKind.is_traversable) { '✅' } else { '❌' }
-            [string] $edgeDescription = if ($relKind) { [string] $relKind.description } else { '' }
 
             if ($NodeName -in $schema.Destinations.Name) {
                 [string] $sourceLinks = ($schema.Sources | ForEach-Object {
                         '[{0}]({1})' -f $_.Name, $_.Url
                     }) -join ', '
-                $inboundRows.Add("| $edgeLink | $sourceLinks | $traversable | $edgeDescription |")
+                $inboundRows.Add("| $edgeLink | $sourceLinks | $traversable |")
             }
 
             if ($NodeName -in $schema.Sources.Name) {
                 [string] $destLinks = ($schema.Destinations | ForEach-Object {
                         '[{0}]({1})' -f $_.Name, $_.Url
                     }) -join ', '
-                $outboundRows.Add("| $edgeLink | $destLinks | $traversable | $edgeDescription |")
+                $outboundRows.Add("| $edgeLink | $destLinks | $traversable |")
             }
         }
         catch {
