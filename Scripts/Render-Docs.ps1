@@ -114,7 +114,10 @@ if ($Mode -eq 'Official') {
     # Step 0: Clean the output directory
     Write-Host '== Step 0: Cleaning output directory ==' -ForegroundColor Cyan
     if (Test-Path -Path $officialDocsDir -PathType Container) {
-        Get-ChildItem -Path $officialDocsDir | Remove-Item -Recurse -Force -Verbose
+        Get-ChildItem -Path $officialDocsDir | ForEach-Object {
+            Remove-Item -Path $_.FullName -Recurse -Force
+            Write-Host "Removed $($_.FullName)" -ForegroundColor DarkGray
+        }
     }
     New-Item -Path $imagesOutputDirFullPath -ItemType Directory -Force | Out-Null
     New-Item -Path $opengraphRefDir -ItemType Directory -Force | Out-Null
@@ -138,47 +141,61 @@ if ($Mode -eq 'Official') {
         if ($file.Name -cne $lowerName) {
             Write-Warning "Renaming image to lowercase: $($file.Name) -> $lowerName"
         }
-        Copy-Item -Path $file.FullName -Destination (Join-Path -Path $imagesOutputDirFullPath -ChildPath $lowerName) -Force -Verbose
+        [string] $destPath = Join-Path -Path $imagesOutputDirFullPath -ChildPath $lowerName
+        Copy-Item -Path $file.FullName -Destination $destPath -Force
+        Write-Host "Copied $destPath" -ForegroundColor DarkGray
     }
 
     # Step 3: Render custom queries MDX
     Write-Host '== Step 3: Rendering custom queries ==' -ForegroundColor Cyan
-    [string] $queriesOutputPath = Join-Path -Path $opengraphRefDir -ChildPath 'queries.mdx'
-    [string] $queriesGitHubPath = '{0}/tree/main/{1}' -f $GitHubBaseUrl, (Get-ConfigValue 'queriesDir' 'Src/Queries')
-    [hashtable] $customQueriesParams = @{
-        ExtensionName   = $extensionName
-        OutputPath      = $queriesOutputPath
-        QueriesLinkPath = $queriesGitHubPath
-        StripTitlePrefix = $StripTitlePrefix
-        OfficialDocs    = $true
+    [string] $effectiveQueriesDir = if ($QueriesDir) { $QueriesDir } else { Join-Path -Path $repoRoot -ChildPath 'Src/Queries' }
+    if (-not (Test-Path -Path $effectiveQueriesDir -PathType Container)) {
+        Write-Host "WARNING: Queries directory not found, skipping: $effectiveQueriesDir" -ForegroundColor Red
     }
-    if ($QueriesDir) { $customQueriesParams['InputDir'] = $QueriesDir }
-    try {
-        & (Join-Path -Path $PSScriptRoot -ChildPath 'Render-CustomQueries.ps1') @customQueriesParams
-    }
-    catch {
-        Write-Error "Step 3 (Render-CustomQueries) failed: $($_.Exception.Message)`nScriptStackTrace: $($_.ScriptStackTrace)"
-        throw
+    else {
+        [string] $queriesOutputPath = Join-Path -Path $opengraphRefDir -ChildPath 'queries.mdx'
+        [string] $queriesGitHubPath = '{0}/tree/main/{1}' -f $GitHubBaseUrl, (Get-ConfigValue 'queriesDir' 'Src/Queries')
+        [hashtable] $customQueriesParams = @{
+            ExtensionName   = $extensionName
+            OutputPath      = $queriesOutputPath
+            QueriesLinkPath = $queriesGitHubPath
+            StripTitlePrefix = $StripTitlePrefix
+            OfficialDocs    = $true
+        }
+        if ($QueriesDir) { $customQueriesParams['InputDir'] = $QueriesDir }
+        try {
+            & (Join-Path -Path $PSScriptRoot -ChildPath 'Render-CustomQueries.ps1') @customQueriesParams
+        }
+        catch {
+            Write-Error "Step 3 (Render-CustomQueries) failed: $($_.Exception.Message)`nScriptStackTrace: $($_.ScriptStackTrace)"
+            throw
+        }
     }
 
     # Step 4: Render privilege zone rules MDX
     Write-Host '== Step 4: Rendering privilege zone rules ==' -ForegroundColor Cyan
-    [string] $privilegeZonePath = Join-Path -Path $opengraphRefDir -ChildPath 'privilege-zone-rules.mdx'
-    [string] $rulesGitHubPath = '{0}/tree/main/{1}' -f $GitHubBaseUrl, (Get-ConfigValue 'zoneRulesDir' 'Src/PrivilegeZoneRules')
-    [hashtable] $privilegeZoneParams = @{
-        ExtensionName = $extensionName
-        OutputPath    = $privilegeZonePath
-        RulesLinkPath = $rulesGitHubPath
-        StripTitlePrefix = $StripTitlePrefix
-        OfficialDocs  = $true
+    [string] $effectiveZoneRulesDir = if ($ZoneRulesDir) { $ZoneRulesDir } else { Join-Path -Path $repoRoot -ChildPath 'Src/PrivilegeZoneRules' }
+    if (-not (Test-Path -Path $effectiveZoneRulesDir -PathType Container)) {
+        Write-Host "WARNING: Zone rules directory not found, skipping: $effectiveZoneRulesDir" -ForegroundColor Red
     }
-    if ($ZoneRulesDir) { $privilegeZoneParams['InputDir'] = $ZoneRulesDir }
-    try {
-        & (Join-Path -Path $PSScriptRoot -ChildPath 'Render-PrivilegeZoneRules.ps1') @privilegeZoneParams
-    }
-    catch {
-        Write-Error "Step 4 (Render-PrivilegeZoneRules) failed: $($_.Exception.Message)`nScriptStackTrace: $($_.ScriptStackTrace)"
-        throw
+    else {
+        [string] $privilegeZonePath = Join-Path -Path $opengraphRefDir -ChildPath 'privilege-zone-rules.mdx'
+        [string] $rulesGitHubPath = '{0}/tree/main/{1}' -f $GitHubBaseUrl, (Get-ConfigValue 'zoneRulesDir' 'Src/PrivilegeZoneRules')
+        [hashtable] $privilegeZoneParams = @{
+            ExtensionName = $extensionName
+            OutputPath    = $privilegeZonePath
+            RulesLinkPath = $rulesGitHubPath
+            StripTitlePrefix = $StripTitlePrefix
+            OfficialDocs  = $true
+        }
+        if ($ZoneRulesDir) { $privilegeZoneParams['InputDir'] = $ZoneRulesDir }
+        try {
+            & (Join-Path -Path $PSScriptRoot -ChildPath 'Render-PrivilegeZoneRules.ps1') @privilegeZoneParams
+        }
+        catch {
+            Write-Error "Step 4 (Render-PrivilegeZoneRules) failed: $($_.Exception.Message)`nScriptStackTrace: $($_.ScriptStackTrace)"
+            throw
+        }
     }
 
     # Step 5: Render node and edge documentation MDX files
@@ -233,38 +250,50 @@ if ($Mode -eq 'Local') {
 
     # Step 2: Render custom queries markdown
     Write-Host '== Step 2: Rendering custom queries ==' -ForegroundColor Cyan
-    [string] $queriesLinkPath = '../' + (Get-ConfigValue 'queriesDir' 'Src/Queries')
-    [hashtable] $customQueriesParams = @{
-        ExtensionName   = $extensionName
-        OutputPath      = (Join-Path -Path $docsDir -ChildPath 'Queries.md')
-        QueriesLinkPath = $queriesLinkPath
-        StripTitlePrefix = $StripTitlePrefix
+    [string] $effectiveQueriesDir = if ($QueriesDir) { $QueriesDir } else { Join-Path -Path $repoRoot -ChildPath 'Src/Queries' }
+    if (-not (Test-Path -Path $effectiveQueriesDir -PathType Container)) {
+        Write-Host "WARNING: Queries directory not found, skipping: $effectiveQueriesDir" -ForegroundColor Red
     }
-    if ($QueriesDir) { $customQueriesParams['InputDir'] = $QueriesDir }
-    try {
-        & (Join-Path -Path $PSScriptRoot -ChildPath 'Render-CustomQueries.ps1') @customQueriesParams
-    }
-    catch {
-        Write-Error "Step 2 (Render-CustomQueries) failed: $($_.Exception.Message)`nScriptStackTrace: $($_.ScriptStackTrace)"
-        throw
+    else {
+        [string] $queriesLinkPath = '../' + (Get-ConfigValue 'queriesDir' 'Src/Queries')
+        [hashtable] $customQueriesParams = @{
+            ExtensionName   = $extensionName
+            OutputPath      = (Join-Path -Path $docsDir -ChildPath 'Queries.md')
+            QueriesLinkPath = $queriesLinkPath
+            StripTitlePrefix = $StripTitlePrefix
+        }
+        if ($QueriesDir) { $customQueriesParams['InputDir'] = $QueriesDir }
+        try {
+            & (Join-Path -Path $PSScriptRoot -ChildPath 'Render-CustomQueries.ps1') @customQueriesParams
+        }
+        catch {
+            Write-Error "Step 2 (Render-CustomQueries) failed: $($_.Exception.Message)`nScriptStackTrace: $($_.ScriptStackTrace)"
+            throw
+        }
     }
 
     # Step 3: Render privilege zone rules markdown
     Write-Host '== Step 3: Rendering privilege zone rules ==' -ForegroundColor Cyan
-    [string] $zoneRulesLinkPath = '../' + (Get-ConfigValue 'zoneRulesDir' 'Src/PrivilegeZoneRules')
-    [hashtable] $privilegeZoneParams = @{
-        ExtensionName = $extensionName
-        OutputPath    = (Join-Path -Path $docsDir -ChildPath 'PrivilegeZoneRules.md')
-        RulesLinkPath = $zoneRulesLinkPath
-        StripTitlePrefix = $StripTitlePrefix
+    [string] $effectiveZoneRulesDir = if ($ZoneRulesDir) { $ZoneRulesDir } else { Join-Path -Path $repoRoot -ChildPath 'Src/PrivilegeZoneRules' }
+    if (-not (Test-Path -Path $effectiveZoneRulesDir -PathType Container)) {
+        Write-Host "WARNING: Zone rules directory not found, skipping: $effectiveZoneRulesDir" -ForegroundColor Red
     }
-    if ($ZoneRulesDir) { $privilegeZoneParams['InputDir'] = $ZoneRulesDir }
-    try {
-        & (Join-Path -Path $PSScriptRoot -ChildPath 'Render-PrivilegeZoneRules.ps1') @privilegeZoneParams
-    }
-    catch {
-        Write-Error "Step 3 (Render-PrivilegeZoneRules) failed: $($_.Exception.Message)`nScriptStackTrace: $($_.ScriptStackTrace)"
-        throw
+    else {
+        [string] $zoneRulesLinkPath = '../' + (Get-ConfigValue 'zoneRulesDir' 'Src/PrivilegeZoneRules')
+        [hashtable] $privilegeZoneParams = @{
+            ExtensionName = $extensionName
+            OutputPath    = (Join-Path -Path $docsDir -ChildPath 'PrivilegeZoneRules.md')
+            RulesLinkPath = $zoneRulesLinkPath
+            StripTitlePrefix = $StripTitlePrefix
+        }
+        if ($ZoneRulesDir) { $privilegeZoneParams['InputDir'] = $ZoneRulesDir }
+        try {
+            & (Join-Path -Path $PSScriptRoot -ChildPath 'Render-PrivilegeZoneRules.ps1') @privilegeZoneParams
+        }
+        catch {
+            Write-Error "Step 3 (Render-PrivilegeZoneRules) failed: $($_.Exception.Message)`nScriptStackTrace: $($_.ScriptStackTrace)"
+            throw
+        }
     }
 
     # Step 4: Render schema markdown

@@ -220,4 +220,5 @@ foreach ($relationshipKind in $relationshipKinds) {
 $markdown = $markdown -replace "`r?`n", "`r`n"
 
 # Create the Nodes.md file
-Set-Content -Path $OutputPath -Value $markdown -Encoding UTF8 -Verbose
+Set-Content -Path $OutputPath -Value $markdown -Encoding UTF8
+Write-Host "Wrote $OutputPath" -ForegroundColor DarkGray

@@ -441,7 +441,8 @@ description: {1}
 
     $mdx = $mdx -replace "`r?`n", "`r`n"
 
-    Set-Content -Path $OutputFilePath -Value $mdx -Encoding UTF8 -Verbose
+    Set-Content -Path $OutputFilePath -Value $mdx -Encoding UTF8
+    Write-Host "Wrote $OutputFilePath" -ForegroundColor DarkGray
 }
 
 # Parse extension schema

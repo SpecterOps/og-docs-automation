@@ -92,4 +92,5 @@ $docs = [ordered]@{
 [string] $json = $docs | ConvertTo-Json -Depth 8
 $json = $json -replace "`r?`n", "`r`n"
 
-Set-Content -Path $outputPath -Value $json -Encoding UTF8 -Verbose
+Set-Content -Path $outputPath -Value $json -Encoding UTF8
+Write-Host "Wrote $outputPath" -ForegroundColor DarkGray

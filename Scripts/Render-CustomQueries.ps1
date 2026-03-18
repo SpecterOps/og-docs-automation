@@ -126,4 +126,5 @@ This query can be imported into BloodHound from the [{3}]({4}/{3}) file.
 # Normalize line endings to CRLF for Git working tree
 $markdown = $markdown -replace "`r?`n", "`r`n"
 
-Set-Content -Path $OutputPath -Value $markdown -Encoding UTF8 -Verbose
+Set-Content -Path $OutputPath -Value $markdown -Encoding UTF8
+Write-Host "Wrote $OutputPath" -ForegroundColor DarkGray

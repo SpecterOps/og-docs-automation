@@ -601,7 +601,7 @@ function New-NodeIcon {
 
                 Write-NodeIconPng -Bitmap $bitmap -OutputFile $outputFile
 
-                Write-Host "Wrote $outputFile"
+                Write-Host "Wrote $outputFile" -ForegroundColor DarkGray
             }
             finally {
                 $canvas.Dispose()
