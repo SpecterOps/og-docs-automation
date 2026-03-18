@@ -417,6 +417,7 @@ function New-OfficialDoc {
     $bodyMarkdown = Convert-ImagePaths -Markdown $bodyMarkdown -ExtensionName $ExtensionName
     $bodyMarkdown = Convert-MarkdownLinks -Markdown $bodyMarkdown -NodeDescDirName $NodeDescDirName -EdgeDescDirName $EdgeDescDirName -SiblingBasePath $SiblingBasePath
     $bodyMarkdown = Convert-Callouts -Markdown $bodyMarkdown
+    $bodyMarkdown = $bodyMarkdown.Replace('https://bloodhound.specterops.io/', '/')
 
     [string] $iconLine = ''
     if (-not [string]::IsNullOrWhiteSpace($IconPath)) {
