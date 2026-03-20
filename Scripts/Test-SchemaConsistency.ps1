@@ -19,6 +19,7 @@
       - Kinds present in the schema but missing from documentation
       - Naming convention issues (near-duplicate names differing only by underscore/casing)
       - Saved query references to extension nodes/edges not present in the schema
+      - Mermaid diagram edges whose arrow style (solid/dashed) conflicts with is_traversable
 
 .EXAMPLE
     pwsh -File Test-SchemaConsistency.ps1
@@ -359,6 +360,56 @@ if ($QueriesDir -and (Test-Path $QueriesDir)) {
     if ($issueCount -eq $issuesBefore) {
         Write-Host '  All query node/edge references found in schema.' -ForegroundColor Green
     }
+}
+
+# ── 6. Mermaid diagram traversability ─────────────────────────────────────────
+Write-Section 'Mermaid diagram traversability'
+
+# Build a lookup: edge name → is_traversable (bool)
+$edgeTraversable = @{}
+foreach ($rel in $schema.relationship_kinds) {
+    $edgeTraversable[$rel.name] = [bool]$rel.is_traversable
+}
+
+# Scan all markdown files in both edge and node description directories
+[string[]] $mermaidDirs = @($EdgeDescDir, $NodeDescDir) | Where-Object { $_ -and (Test-Path $_) }
+[int] $issuesBefore = $issueCount
+
+foreach ($dir in $mermaidDirs) {
+    foreach ($mdFile in Get-ChildItem -Path $dir -Filter '*.md') {
+        [string[]] $lines = Get-Content -Path $mdFile.FullName
+        [bool] $inMermaid = $false
+
+        for ($i = 0; $i -lt $lines.Count; $i++) {
+            [string] $line = $lines[$i]
+
+            if ($line -match '^\s*```mermaid') { $inMermaid = $true; continue }
+            if ($line -match '^\s*```' -and $inMermaid) { $inMermaid = $false; continue }
+            if (-not $inMermaid) { continue }
+
+            # Match solid edges: -- EdgeName -->
+            $solidMatches = [regex]::Matches($line, '--\s+(\w+)\s+-->')
+            foreach ($m in $solidMatches) {
+                [string] $edgeName = $m.Groups[1].Value
+                if ($edgeTraversable.ContainsKey($edgeName) -and -not $edgeTraversable[$edgeName]) {
+                    Write-Issue 'MERMAID' "$edgeName is non-traversable but drawn with solid arrow (-->) in $($mdFile.Name):$($i + 1)"
+                }
+            }
+
+            # Match dashed edges: -. EdgeName .->
+            $dashedMatches = [regex]::Matches($line, '-\.\s+(\w+)\s+\.->')
+            foreach ($m in $dashedMatches) {
+                [string] $edgeName = $m.Groups[1].Value
+                if ($edgeTraversable.ContainsKey($edgeName) -and $edgeTraversable[$edgeName]) {
+                    Write-Issue 'MERMAID' "$edgeName is traversable but drawn with dashed arrow (.->) in $($mdFile.Name):$($i + 1)"
+                }
+            }
+        }
+    }
+}
+
+if ($issueCount -eq $issuesBefore) {
+    Write-Host '  All mermaid diagram edges match schema traversability.' -ForegroundColor Green
 }
 
 # ── Summary ────────────────────────────────────────────────────────────────────

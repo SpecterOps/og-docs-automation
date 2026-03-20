@@ -91,6 +91,29 @@ Each script can also be invoked directly with explicit parameters for one-off us
 | `Render-Schema.ps1` | Generates a schema overview with node and edge tables. |
 | `Render-NodeAndEdgeDocs.ps1` | Generates individual MDX pages per node and edge kind (official mode only). |
 | `Render-OfficialDocsJson.ps1` | Generates `docs.json` navigation metadata (official mode only). |
+| `Test-SchemaConsistency.ps1` | Validates consistency between the extension schema, documentation, source, and saved queries. |
+
+## Schema consistency tests
+
+`Test-SchemaConsistency.ps1` validates the extension schema, documentation, optional collector source, and saved queries. Run it from the repository root:
+
+```bash
+pwsh OGDocsAutomation/Scripts/Test-SchemaConsistency.ps1
+pwsh OGDocsAutomation/Scripts/Test-SchemaConsistency.ps1 -SourcePath path/to/collector.ps1
+```
+
+The script performs the following checks:
+
+| # | Check | Description |
+|---|-------|-------------|
+| 1 | **Schema duplicates** | Detects duplicate node or edge kind names within the extension schema JSON. |
+| 2 | **Source vs schema** | Compares kinds found in the collector source file against the schema. Reports kinds that are in source but missing from the schema, and vice versa. Requires `-SourcePath`. |
+| 3 | **Documentation vs schema** | Compares `.md` files in the node/edge description directories against the schema. Reports documented kinds missing from the schema and undocumented schema kinds. |
+| 4 | **Naming conventions** | Flags near-duplicate kind names that differ only by underscore placement or casing (e.g. `GH_RepoAdmin` vs `GH_Repoadmin`). |
+| 5 | **Saved queries vs schema** | Scans Cypher queries in saved query JSON files for node labels and relationship types that reference kinds not present in the schema. |
+| 6 | **Mermaid diagram traversability** | Scans mermaid diagrams in documentation markdown files and verifies that edge arrow styles match the schema's `is_traversable` property — solid arrows (`-->`) for traversable edges and dashed arrows (`.->`) for non-traversable edges. |
+
+The script exits with a non-zero exit code equal to the number of issues found (capped at 255).
 
 ## Requirements
 
