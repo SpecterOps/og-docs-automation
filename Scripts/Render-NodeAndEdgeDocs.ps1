@@ -13,6 +13,7 @@
     - Links to ../../NodeDescriptions/ and ../../EdgeDescriptions/ are rewritten using the DocsBasePath parameter.
     - Links to other markdown files have their .md extension stripped.
     - GitHub-flavored callouts (NOTE, IMPORTANT, WARNING, TIP, CAUTION) are converted to Mintlify components.
+    - "@" characters inside mermaid code blocks are escaped as "\@" (if not already escaped) to prevent MDX parsing issues.
     - Node documentation includes Inbound Edges and Outbound Edges sections (inserted between Overview and
       Properties), with tables generated from the Edge Schema sections of edge descriptions.
 #>
@@ -417,6 +418,10 @@ function New-OfficialDoc {
     $bodyMarkdown = Convert-ImagePaths -Markdown $bodyMarkdown -ExtensionName $ExtensionName
     $bodyMarkdown = Convert-MarkdownLinks -Markdown $bodyMarkdown -NodeDescDirName $NodeDescDirName -EdgeDescDirName $EdgeDescDirName -SiblingBasePath $SiblingBasePath
     $bodyMarkdown = Convert-Callouts -Markdown $bodyMarkdown
+    $bodyMarkdown = [regex]::Replace($bodyMarkdown, '(?s)```mermaid\r?\n.*?```', {
+            param([System.Text.RegularExpressions.Match] $match)
+            return $match.Value -replace '(?<!\\)@', '\@'
+        })
     $bodyMarkdown = $bodyMarkdown.Replace('https://bloodhound.specterops.io/', '/')
 
     [string] $iconLine = ''
