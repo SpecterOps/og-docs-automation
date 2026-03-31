@@ -13,15 +13,15 @@ param (
 
     [Parameter(Mandatory = $false)]
     [ValidateNotNullOrEmpty()]
-    [string] $InputDir = (Join-Path -Path $PSScriptRoot -ChildPath '../../Src/PrivilegeZoneRules/'),
+    [string] $InputDir = (Join-Path -Path $PSScriptRoot -ChildPath '../../../extension/privilege_zone_rules/'),
 
     [Parameter(Mandatory = $false)]
     [ValidateNotNullOrEmpty()]
-    [string] $OutputPath = (Join-Path -Path $PSScriptRoot -ChildPath '../../Documentation/PrivilegeZoneRules.md'),
+    [string] $OutputPath = (Join-Path -Path $PSScriptRoot -ChildPath '../../privilege_zone_rules.md'),
 
     [Parameter(Mandatory = $false)]
     [ValidateNotNullOrEmpty()]
-    [string] $RulesLinkPath = '../Src/PrivilegeZoneRules',
+    [string] $RulesLinkPath = '../extension/privilege_zone_rules',
 
     [Parameter(Mandatory = $false)]
     [string] $StripTitlePrefix = '',

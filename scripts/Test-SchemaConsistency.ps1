@@ -6,7 +6,7 @@
     Reads the og-docs.json configuration file and compares node kinds and edge kinds across
     up to three sources:
 
-      1. The extension schema JSON file (required — path from og-docs.json extensionPath)
+      1. The extension schema JSON file (required — path from og-docs.json extensionSchemaPath)
       2. Node and Edge documentation files (paths from og-docs.json edgeDescriptionsDir,
          nodeDescriptionsDir)
       3. Collector source file (optional — pass -SourcePath; works with any language)
@@ -23,8 +23,8 @@
 
 .EXAMPLE
     pwsh -File Test-SchemaConsistency.ps1
-    pwsh -File Test-SchemaConsistency.ps1 -SourcePath ../../githound.ps1
-    pwsh -File Test-SchemaConsistency.ps1 -ConfigFile ../../Documentation/og-docs.json
+    pwsh -File Test-SchemaConsistency.ps1 -SourcePath ../../../githound.ps1
+    pwsh -File Test-SchemaConsistency.ps1 -ConfigFile ../../og-docs.json
 #>
 
 #Requires -Version 5.1
@@ -32,7 +32,7 @@
 [CmdletBinding()]
 param (
     [Parameter(Mandatory = $false)]
-    [string] $ConfigFile = (Join-Path -Path $PSScriptRoot -ChildPath '../../Documentation/og-docs.json'),
+    [string] $ConfigFile = (Join-Path -Path $PSScriptRoot -ChildPath '../../og-docs.json'),
 
     [Parameter(Mandatory = $false)]
     [string] $SourcePath
@@ -52,8 +52,8 @@ if (-not (Test-Path -Path $ConfigFile -PathType Leaf)) {
 [string] $configDir = (Get-Item -Path $ConfigFile).Directory.FullName
 [string] $repoRoot = (Get-Item -Path (Join-Path -Path $configDir -ChildPath '..')).FullName
 
-if (-not $config.extensionPath) {
-    Write-Error "Config file must specify 'extensionPath'."
+if (-not $config.extensionSchemaPath) {
+    Write-Error "Config file must specify 'extensionSchemaPath'."
     $host.SetShouldExit(1)
     return
 }
@@ -74,10 +74,10 @@ function Get-ConfigPath([string] $key, [string] $default = '') {
     return ''
 }
 
-[string] $SchemaPath   = Resolve-ConfigPath $config.extensionPath
-[string] $NodeDescDir  = Get-ConfigPath 'nodeDescriptionsDir' 'Documentation/NodeDescriptions'
-[string] $EdgeDescDir  = Get-ConfigPath 'edgeDescriptionsDir' 'Documentation/EdgeDescriptions'
-[string] $QueriesDir   = Get-ConfigPath 'queriesDir'
+[string] $SchemaPath        = Resolve-ConfigPath $config.extensionSchemaPath
+[string] $NodeDescDir      = Get-ConfigPath 'nodeDescriptionsDir' 'descriptions/nodes'
+[string] $EdgeDescDir      = Get-ConfigPath 'edgeDescriptionsDir' 'descriptions/edges'
+[string] $SavedSearchesDir = Get-ConfigPath 'savedSearchesDir'
 
 # ── Parse schema JSON ─────────────────────────────────────────────────────────
 $schema = Get-Content -Raw $SchemaPath | ConvertFrom-Json
@@ -317,14 +317,14 @@ if ($allNamingIssues.Count -gt 0) {
 }
 
 # ── 5. Saved queries vs schema ────────────────────────────────────────────────
-if ($QueriesDir -and (Test-Path $QueriesDir)) {
+if ($SavedSearchesDir -and (Test-Path $SavedSearchesDir)) {
     Write-Section 'Saved queries vs schema'
 
     # Build the prefix used to identify kinds belonging to this extension (e.g. "GH_")
     [string] $nsPrefix = if ($namespace) { "${namespace}_" } else { '' }
 
     [int] $issuesBefore = $issueCount
-    foreach ($queryFile in Get-ChildItem -Path $QueriesDir -Filter '*.json') {
+    foreach ($queryFile in Get-ChildItem -Path $SavedSearchesDir -Filter '*.json') {
         $queryJson = Get-Content -Raw $queryFile.FullName | ConvertFrom-Json
         if (-not $queryJson.query) { continue }
         [string] $cypher = $queryJson.query

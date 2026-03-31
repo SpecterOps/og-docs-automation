@@ -3,7 +3,7 @@
      Renders PNG icons for node kinds defined in a BloodHound extension schema file.
 
 .DESCRIPTION
-    Reads a BloodHound extension schema JSON file and generates PNG icons in the Icons directory.
+    Reads a BloodHound extension schema JSON file and generates PNG icons in the icons directory.
     Each PNG has a transparent background, a filled circle in the node color with
     a 2px black border, and a black Font Awesome icon centered inside the circle.
 
@@ -13,11 +13,11 @@
 .PARAMETER IconScale
     The relative scale for the Font Awesome icon within the circle. Default is 0.55.
 
-.PARAMETER ExtensionPath
+.PARAMETER ExtensionSchemaPath
     The path to the JSON schema file. Default is the hardcoded main extension file.
 
 .PARAMETER OutputDir
-    The directory where PNG icons are written. Default is the Icons directory.
+    The directory where PNG icons are written. Default is the icons directory.
 
 .PARAMETER PackageCachePath
     The directory where NuGet packages are cached. Default is the BloodHound-IconRender
@@ -33,11 +33,11 @@
 param(
     [Parameter(Mandatory = $true)]
     [ValidateNotNullOrEmpty()]
-    [string] $ExtensionPath,
+    [string] $ExtensionSchemaPath,
 
     [Parameter(Mandatory = $false)]
     [ValidateNotNullOrEmpty()]
-    [string] $OutputDir = (Join-Path -Path $PSScriptRoot -ChildPath '../../Documentation/Icons'),
+    [string] $OutputDir = (Join-Path -Path $PSScriptRoot -ChildPath '../../icons'),
 
     [Parameter(Mandatory = $false)]
     [ValidateRange(16, 512)]
@@ -90,7 +90,7 @@ function Main {
     }
 
     # Parse the JSON file
-    [psobject] $json = Get-Content -Path $ExtensionPath | ConvertFrom-Json
+    [psobject] $json = Get-Content -Path $ExtensionSchemaPath | ConvertFrom-Json
     [NodeDefinition[]] $nodeDefinitions = Get-NodeDefinitions -Json $json
 
     # Generate PNG icons for each node kind

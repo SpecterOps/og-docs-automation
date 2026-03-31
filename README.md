@@ -7,68 +7,68 @@ A set of PowerShell scripts that generate documentation for BloodHound OpenGraph
 1. Add this repo as a submodule:
 
    ```bash
-   git submodule add git@github.com:SpecterOps/og-docs-automation.git OGDocsAutomation
+   git submodule add git@github.com:SpecterOps/og-docs-automation.git docs/og-docs-automation
    ```
 
-2. Copy the example config to your `Documentation/` folder and edit it:
+2. Copy the example config to your `docs/` folder and edit it:
 
    ```bash
-   cp OGDocsAutomation/og-docs.example.json Documentation/og-docs.json
+   cp docs/og-docs-automation/og-docs.example.json docs/og-docs.json
    ```
 
 3. Generate docs:
 
    ```bash
    # Local markdown docs (default)
-   pwsh OGDocsAutomation/Scripts/Render-Docs.ps1
+   pwsh docs/og-docs-automation/scripts/Render-Docs.ps1
 
    # Official MDX docs for the BloodHound documentation site
-   pwsh OGDocsAutomation/Scripts/Render-Docs.ps1 -Mode Official
+   pwsh docs/og-docs-automation/scripts/Render-Docs.ps1 -Mode Official
    ```
 
 ## How it works
 
-`Render-Docs.ps1` reads `Documentation/og-docs.json` and orchestrates the individual render scripts. All paths in the config are resolved relative to the repository root (the parent of the `Documentation/` directory containing the config file).
+`Render-Docs.ps1` reads `docs/og-docs.json` and orchestrates the individual render scripts. All paths in the config are resolved relative to the repository root (the parent of the `docs/` directory containing the config file).
 
 ### Local mode
 
-Generates plain markdown files in `Documentation/`:
+Generates plain markdown files in `docs/`:
 
 | Output | Script |
 |--------|--------|
-| `Documentation/Icons/*.png` | Render-CustomNodeIcons |
-| `Documentation/Queries.md` | Render-CustomQueries |
-| `Documentation/PrivilegeZoneRules.md` | Render-PrivilegeZoneRules |
-| `Documentation/Schema.md` | Render-Schema |
+| `docs/icons/*.png` | Render-CustomNodeIcons |
+| `docs/queries.md` | Render-CustomQueries |
+| `docs/privilege_zone_rules.md` | Render-PrivilegeZoneRules |
+| `docs/schema.md` | Render-Schema |
 
 ### Official mode
 
-Generates MDX files with frontmatter, Mintlify components, and a `docs.json` navigation file under `Documentation/OfficialDocs/`:
+Generates MDX files with frontmatter, Mintlify components, and a `docs.json` navigation file under `docs/official-docs/`:
 
 | Output | Script |
 |--------|--------|
 | Icon PNGs | Render-CustomNodeIcons |
 | Static image copy | *(built into Render-Docs)* |
 | `queries.mdx` | Render-CustomQueries |
-| `privilege-zone-rules.mdx` | Render-PrivilegeZoneRules |
+| `privilege_zone_rules.mdx` | Render-PrivilegeZoneRules |
 | Per-node and per-edge `.mdx` files | Render-NodeAndEdgeDocs |
 | `schema.mdx` | Render-Schema |
 | `docs.json` | Render-OfficialDocsJson |
 
 ## Configuration reference
 
-The `og-docs.json` file configures all paths and settings. Only `extensionPath` is required; everything else has sensible defaults.
+The `og-docs.json` file configures all paths and settings. Only `extensionSchemaPath` is required; everything else has sensible defaults.
 
 | Key | Type | Required | Default | Description |
 |-----|------|----------|---------|-------------|
-| `extensionPath` | string | Yes | — | Path to the extension schema JSON file (e.g. `schema.json`). |
+| `extensionSchemaPath` | string | Yes | — | Path to the extension schema JSON file (e.g. `extension/schema.json`). |
 | `gitHubBaseUrl` | string | No | `https://github.com/SpecterOps/{ExtensionName}` | Base URL of the GitHub repository. Used to generate source links in official docs. |
 | `stripTitlePrefix` | string | No | `""` | Prefix stripped from query and rule names in headings (e.g. `"MyExt: "`). |
-| `queriesDir` | string | No | `Src/Queries` | Directory containing custom Cypher query JSON files. |
-| `zoneRulesDir` | string | No | `Src/PrivilegeZoneRules` | Directory containing privilege zone rule JSON files. |
-| `nodeDescriptionsDir` | string | No | `Documentation/NodeDescriptions` | Directory containing per-node `.md` description files. Used by Render-NodeAndEdgeDocs in official mode. |
-| `edgeDescriptionsDir` | string | No | `Documentation/EdgeDescriptions` | Directory containing per-edge `.md` description files. Used by Render-NodeAndEdgeDocs in official mode. |
-| `imagesDir` | string | No | `Documentation/Images` | Directory containing static image assets. Copied to official docs output with lowercased filenames. |
+| `savedSearchesDir` | string | No | `extension/saved_searches` | Directory containing custom Cypher query JSON files. |
+| `zoneRulesDir` | string | No | `extension/privilege_zone_rules` | Directory containing privilege zone rule JSON files. |
+| `nodeDescriptionsDir` | string | No | `descriptions/nodes` | Directory containing per-node `.md` description files. Used by Render-NodeAndEdgeDocs in official mode. |
+| `edgeDescriptionsDir` | string | No | `descriptions/edges` | Directory containing per-edge `.md` description files. Used by Render-NodeAndEdgeDocs in official mode. |
+| `imagesDir` | string | No | `descriptions/images` | Directory containing static image assets. Copied to official docs output with lowercased filenames. |
 | `iconSize` | integer | No | `32` | Width and height in pixels for generated node icon PNGs (16–512). |
 | `iconScale` | number | No | `0.55` | Scale of the Font Awesome icon within the circle (0.1–1.0). |
 
@@ -76,7 +76,7 @@ The `og-docs.json` file configures all paths and settings. Only `extensionPath` 
 
 | Parameter | Default | Description |
 |-----------|---------|-------------|
-| `-ConfigFile` | `../../Documentation/og-docs.json` (relative to script) | Path to the configuration file. |
+| `-ConfigFile` | `../../og-docs.json` (relative to script) | Path to the configuration file. |
 | `-Mode` | `Local` | `Local` for plain markdown, `Official` for MDX with navigation JSON. |
 
 ## Individual scripts
@@ -98,8 +98,8 @@ Each script can also be invoked directly with explicit parameters for one-off us
 `Test-SchemaConsistency.ps1` validates the extension schema, documentation, optional collector source, and saved queries. Run it from the repository root:
 
 ```bash
-pwsh OGDocsAutomation/Scripts/Test-SchemaConsistency.ps1
-pwsh OGDocsAutomation/Scripts/Test-SchemaConsistency.ps1 -SourcePath path/to/collector.ps1
+pwsh docs/og-docs-automation/scripts/Test-SchemaConsistency.ps1
+pwsh docs/og-docs-automation/scripts/Test-SchemaConsistency.ps1 -SourcePath path/to/collector.ps1
 ```
 
 The script performs the following checks:

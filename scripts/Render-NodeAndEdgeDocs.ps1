@@ -4,13 +4,13 @@
 
 .DESCRIPTION
     Reads node kinds and edge kinds from the BloodHound extension schema and
-    creates one MDX file per kind under Documentation/OfficialDocs/opengraph/extensions/<ExtensionName>/reference.
+    creates one MDX file per kind under docs/official-docs/opengraph/extensions/<ExtensionName>/reference.
 
-    Generated files contain frontmatter and the content from Documentation/NodeDescriptions or Documentation/EdgeDescriptions.
+    Generated files contain frontmatter and the content from descriptions/nodes or descriptions/edges.
 
     The following transformations are applied to the description content:
     - H1 headers are removed (the MDX frontmatter title is used instead).
-    - Links to ../../NodeDescriptions/ and ../../EdgeDescriptions/ are rewritten using the DocsBasePath parameter.
+    - Links to ../../nodes/ and ../../edges/ are rewritten using the DocsBasePath parameter.
     - Links to other markdown files have their .md extension stripped.
     - GitHub-flavored callouts (NOTE, IMPORTANT, WARNING, TIP, CAUTION) are converted to Mintlify components.
     - "@" characters inside mermaid code blocks are escaped as "\@" (if not already escaped) to prevent MDX parsing issues.
@@ -24,23 +24,23 @@
 param (
     [Parameter(Mandatory = $true)]
     [ValidateNotNullOrEmpty()]
-    [string] $ExtensionPath,
+    [string] $ExtensionSchemaPath,
 
     [Parameter(Mandatory = $false)]
     [ValidateNotNullOrEmpty()]
-    [string] $NodeDescriptionsDir = (Join-Path -Path $PSScriptRoot -ChildPath '../../Documentation/NodeDescriptions'),
+    [string] $NodeDescriptionsDir = (Join-Path -Path $PSScriptRoot -ChildPath '../../../descriptions/nodes'),
 
     [Parameter(Mandatory = $false)]
     [ValidateNotNullOrEmpty()]
-    [string] $EdgeDescriptionsDir = (Join-Path -Path $PSScriptRoot -ChildPath '../../Documentation/EdgeDescriptions'),
+    [string] $EdgeDescriptionsDir = (Join-Path -Path $PSScriptRoot -ChildPath '../../../descriptions/edges'),
 
     [Parameter(Mandatory = $false)]
     [ValidateNotNullOrEmpty()]
-    [string] $OutputDir = (Join-Path -Path $PSScriptRoot -ChildPath '../../Documentation/OfficialDocs/opengraph/extensions'),
+    [string] $OutputDir = (Join-Path -Path $PSScriptRoot -ChildPath '../../official-docs/opengraph/extensions'),
 
     [Parameter(Mandatory = $false)]
     [ValidateNotNullOrEmpty()]
-    [string] $IconBasePath = 'Icons',
+    [string] $IconBasePath = 'icons',
 
     [Parameter(Mandatory = $false)]
     [ValidateNotNullOrEmpty()]
@@ -454,10 +454,10 @@ description: {1}
 # Parse extension schema
 [psobject] $json = $null
 try {
-    $json = Get-Content -Path $ExtensionPath | ConvertFrom-Json
+    $json = Get-Content -Path $ExtensionSchemaPath | ConvertFrom-Json
 }
 catch {
-    Write-Error "Failed to parse extension file '$ExtensionPath': $($_.Exception.Message)"
+    Write-Error "Failed to parse extension file '$ExtensionSchemaPath': $($_.Exception.Message)"
     throw
 }
 [psobject[]] $nodeKinds = @($json.node_kinds | Sort-Object -Property name)
@@ -465,7 +465,7 @@ catch {
 [string] $extensionName = [string] $json.schema.name
 
 if ([string]::IsNullOrWhiteSpace($extensionName)) {
-    throw "schema.name is missing in extension file: $ExtensionPath"
+    throw "schema.name is missing in extension file: $ExtensionSchemaPath"
 }
 
 [string] $referenceRoot = Join-Path -Path (Join-Path -Path $OutputDir -ChildPath $extensionName.ToLower()) -ChildPath 'reference'

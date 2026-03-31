@@ -9,23 +9,23 @@
 param (
     [Parameter(Mandatory = $true)]
     [ValidateNotNullOrEmpty()]
-    [string] $ExtensionPath,
+    [string] $ExtensionSchemaPath,
 
     [Parameter(Mandatory = $false)]
     [ValidateNotNullOrEmpty()]
-    [string] $OutputPath = (Join-Path -Path $PSScriptRoot -ChildPath '../../Documentation/Schema.md'),
+    [string] $OutputPath = (Join-Path -Path $PSScriptRoot -ChildPath '../../schema.md'),
 
     [Parameter(Mandatory = $false)]
     [AllowNull()]
-    [string] $NodeLinkBasePath = 'NodeDescriptions',
+    [string] $NodeLinkBasePath = 'nodes',
 
     [Parameter(Mandatory = $false)]
     [AllowNull()]
-    [string] $EdgeLinkBasePath = 'EdgeDescriptions',
+    [string] $EdgeLinkBasePath = 'edges',
 
     [Parameter(Mandatory = $false)]
     [ValidateNotNullOrEmpty()]
-    [string] $IconBasePath = 'Icons',
+    [string] $IconBasePath = 'icons',
 
     [Parameter(Mandatory = $false)]
     [string] $GitHubBaseUrl = '',
@@ -69,15 +69,15 @@ function Get-KindMarkdownLink {
 # Parse the JSON file
 [psobject] $json = $null
 try {
-    $json = Get-Content -Path $ExtensionPath | ConvertFrom-Json
+    $json = Get-Content -Path $ExtensionSchemaPath | ConvertFrom-Json
 }
 catch {
-    Write-Error "Failed to parse extension file '$ExtensionPath': $($_.Exception.Message)"
+    Write-Error "Failed to parse extension file '$ExtensionSchemaPath': $($_.Exception.Message)"
     throw
 }
 
 if ([string]::IsNullOrWhiteSpace($json.schema.name)) {
-    throw "schema.name is missing in extension file: $ExtensionPath"
+    throw "schema.name is missing in extension file: $ExtensionSchemaPath"
 }
 
 [psobject[]] $nodeKinds = @($json.node_kinds | Sort-Object -Property name)
@@ -88,7 +88,7 @@ if ([string]::IsNullOrWhiteSpace($json.schema.name)) {
 } else {
     $schemaName
 }
-[string] $extensionFileName = Split-Path -Leaf $ExtensionPath
+[string] $extensionFileName = Split-Path -Leaf $ExtensionSchemaPath
 
 if ($OfficialDocs) {
     [string] $linkExtension = ''
@@ -98,8 +98,8 @@ if ($OfficialDocs) {
         $GitHubBaseUrl.TrimEnd('/')
     }
     # Compute repo-relative path for the GitHub link
-    [string] $gitRoot = (& git -C (Split-Path -Parent $ExtensionPath) rev-parse --show-toplevel) -replace '\\', '/'
-    [string] $extensionAbsolute = (Get-Item -Path $ExtensionPath).FullName -replace '\\', '/'
+    [string] $gitRoot = (& git -C (Split-Path -Parent $ExtensionSchemaPath) rev-parse --show-toplevel) -replace '\\', '/'
+    [string] $extensionAbsolute = (Get-Item -Path $ExtensionSchemaPath).FullName -replace '\\', '/'
     [string] $extensionRepoRelPath = $extensionAbsolute.Substring($gitRoot.Length + 1)
     [string] $extensionFilePath = '{0}/blob/main/{1}' -f $effectiveGitHubBaseUrl, $extensionRepoRelPath
     [bool] $useMintlifyCallouts = $true
@@ -107,7 +107,7 @@ if ($OfficialDocs) {
     [string] $linkExtension = '.md'
     # Compute relative path from the output directory to the extension file
     [string] $outputDir = (Get-Item -Path (Split-Path -Parent $OutputPath)).FullName
-    [string] $resolvedExtensionPath = (Get-Item -Path $ExtensionPath).FullName
+    [string] $resolvedExtensionPath = (Get-Item -Path $ExtensionSchemaPath).FullName
     Push-Location -Path $outputDir
     try {
         [string] $extensionFilePath = (Resolve-Path -Relative -Path $resolvedExtensionPath) -replace '\\', '/'
@@ -181,7 +181,7 @@ $markdown += @'
 foreach ($nodeKind in $nodeKinds) {
     try {
         # Append node-specific markdown
-        # Sample: | ![Okta_Organization](Icons/Okta_Organization.png) | Okta_Organization | Okta Organization |
+        # Sample: | ![Okta_Organization](icons/Okta_Organization.png) | Okta_Organization | Okta Organization |
         $markdown += "`n"
         [string] $nodeKindDisplay = Get-KindMarkdownLink -KindName $nodeKind.name -LinkBasePath $NodeLinkBasePath -Extension $linkExtension -LowercasePath:$OfficialDocs
         $markdown += '| ![{0}]({1}/{2}.png) | {3} | {4} |' -f $nodeKind.name, $IconBasePath, $nodeKind.name.ToLower(), $nodeKindDisplay, $nodeKind.display_name

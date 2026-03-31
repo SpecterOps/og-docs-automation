@@ -3,7 +3,7 @@
     Generates docs.json navigation metadata for an extension's official docs.
 
 .DESCRIPTION
-    Scans MDX pages under Documentation/OfficialDocs/opengraph/extensions/<ExtensionName>
+    Scans MDX pages under docs/official-docs/opengraph/extensions/<ExtensionName>
     and writes a docs.json file with grouped navigation entries.
 
     The images/ directory and docs.json itself are ignored.
@@ -40,7 +40,7 @@ if (-not (Test-Path -Path $DocsDir -PathType Container)) {
         Sort-Object -Property BaseName |
         ForEach-Object { "opengraph/extensions/$extensionSlug/$($_.BaseName)" })
 
-# MDX files directly in reference/ but not in nodes/ or edges/ (e.g. queries.mdx, privilege-zone-rules.mdx)
+# MDX files directly in reference/ but not in nodes/ or edges/ (e.g. queries.mdx, privilege_zone_rules.mdx)
 [string[]] $referencePages = @()
 if (Test-Path -Path $referenceDir -PathType Container) {
     $referencePages = @(Get-ChildItem -Path $referenceDir -Filter '*.mdx' -File |
