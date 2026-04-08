@@ -184,7 +184,7 @@ if ($Mode -eq 'Official') {
         Write-Warning "Zone rules directory not found, skipping: $effectiveZoneRulesDir"
     }
     else {
-        [string] $privilegeZonePath = Join-Path -Path $opengraphRefDir -ChildPath 'privilege_zone_rules.mdx'
+        [string] $privilegeZonePath = Join-Path -Path $opengraphRefDir -ChildPath 'privilege-zone-rules.mdx'
         [string] $rulesGitHubPath = '{0}/tree/main/{1}' -f $GitHubBaseUrl, (Get-ConfigValue 'zoneRulesDir' 'extension/privilege_zone_rules')
         [hashtable] $privilegeZoneParams = @{
             ExtensionName = $extensionName
@@ -287,7 +287,7 @@ if ($Mode -eq 'Local') {
         [string] $zoneRulesLinkPath = '../' + (Get-ConfigValue 'zoneRulesDir' 'extension/privilege_zone_rules')
         [hashtable] $privilegeZoneParams = @{
             ExtensionName = $extensionName
-            OutputPath    = (Join-Path -Path $docsDir -ChildPath 'privilege_zone_rules.md')
+            OutputPath    = (Join-Path -Path $docsDir -ChildPath 'privilege-zone-rules.md')
             RulesLinkPath = $zoneRulesLinkPath
             StripTitlePrefix = $StripTitlePrefix
         }

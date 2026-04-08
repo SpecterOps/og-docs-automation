@@ -17,7 +17,7 @@ param (
 
     [Parameter(Mandatory = $false)]
     [ValidateNotNullOrEmpty()]
-    [string] $OutputPath = (Join-Path -Path $PSScriptRoot -ChildPath '../../privilege_zone_rules.md'),
+    [string] $OutputPath = (Join-Path -Path $PSScriptRoot -ChildPath '../../privilege-zone-rules.md'),
 
     [Parameter(Mandatory = $false)]
     [ValidateNotNullOrEmpty()]
