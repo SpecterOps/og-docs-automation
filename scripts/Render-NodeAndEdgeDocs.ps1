@@ -62,6 +62,17 @@ Set-StrictMode -Version Latest
 [hashtable] $script:NodeKindLookup = @{}
 [hashtable] $script:EdgeKindLookup = @{}
 
+function Test-IsKnownKind {
+    [OutputType([bool])]
+    param(
+        [Parameter(Mandatory = $true)]
+        [ValidateNotNullOrEmpty()]
+        [string] $KindName
+    )
+
+    return ($script:NodeKindLookup.ContainsKey($KindName) -or $script:EdgeKindLookup.ContainsKey($KindName))
+}
+
 function ConvertTo-YamlSingleQuoted {
     [OutputType([string])]
     param(
@@ -116,8 +127,16 @@ function Get-KindLinkPath {
     param(
         [Parameter(Mandatory = $true)]
         [ValidateNotNullOrEmpty()]
-        [string] $KindName
+        [string] $KindName,
+
+        [Parameter(Mandatory = $false)]
+        [AllowEmptyString()]
+        [string] $CurrentKindName
     )
+
+    if (-not [string]::IsNullOrWhiteSpace($CurrentKindName) -and $KindName -eq $CurrentKindName) {
+        return ''
+    }
 
     if ($script:NodeKindLookup.ContainsKey($KindName)) {
         return ('{0}/nodes/{1}' -f $DocsBasePath, $KindName.ToLower())
@@ -163,7 +182,11 @@ function Convert-KindReferences {
     param(
         [Parameter(Mandatory = $true)]
         [AllowEmptyString()]
-        [string] $Markdown
+        [string] $Markdown,
+
+        [Parameter(Mandatory = $false)]
+        [AllowEmptyString()]
+        [string] $CurrentKindName
     )
 
     if (($script:NodeKindLookup.Count + $script:EdgeKindLookup.Count) -eq 0) {
@@ -177,7 +200,11 @@ function Convert-KindReferences {
             param([System.Text.RegularExpressions.Match] $match)
 
             [string] $kindName = $match.Groups['code'].Value
-            [string] $path = Get-KindLinkPath -KindName $kindName
+            if (-not (Test-IsKnownKind -KindName $kindName)) {
+                return $match.Value
+            }
+
+            [string] $path = Get-KindLinkPath -KindName $kindName -CurrentKindName $CurrentKindName
             if ([string]::IsNullOrWhiteSpace($path)) {
                 return $match.Value
             }
@@ -198,7 +225,7 @@ function Convert-KindReferences {
             param([System.Text.RegularExpressions.Match] $match)
 
             [string] $kindName = $match.Groups['kind'].Value
-            [string] $path = Get-KindLinkPath -KindName $kindName
+            [string] $path = Get-KindLinkPath -KindName $kindName -CurrentKindName $CurrentKindName
             if ([string]::IsNullOrWhiteSpace($path)) {
                 return $match.Value
             }
@@ -222,7 +249,11 @@ function Convert-MarkdownLinks {
 
         [Parameter(Mandatory = $true)]
         [ValidateNotNullOrEmpty()]
-        [string] $SiblingBasePath
+        [string] $SiblingBasePath,
+
+        [Parameter(Mandatory = $false)]
+        [AllowEmptyString()]
+        [string] $CurrentKindName
     )
 
     [regex] $linkRegex = [regex]'(?<!!)\[([^\]]+)\]\(([^)]+)\)'
@@ -250,9 +281,13 @@ function Convert-MarkdownLinks {
             }
 
             [string] $baseName = [System.IO.Path]::GetFileNameWithoutExtension($pathWithoutQuery)
-            [string] $rewrittenPath = Get-KindLinkPath -KindName $baseName
+            [string] $rewrittenPath = Get-KindLinkPath -KindName $baseName -CurrentKindName $CurrentKindName
 
             if ([string]::IsNullOrWhiteSpace($rewrittenPath)) {
+                if (-not [string]::IsNullOrWhiteSpace($CurrentKindName) -and $baseName -eq $CurrentKindName) {
+                    return $linkText
+                }
+
                 $rewrittenPath = $linkPath -replace '\.md(?=($|[?#]))', ''
                 if ($rewrittenPath -notmatch '[/\\]') {
                     $rewrittenPath = $SiblingBasePath + '/' + $rewrittenPath
@@ -502,13 +537,17 @@ function Convert-BodyMarkdown {
 
         [Parameter(Mandatory = $true)]
         [ValidateNotNullOrEmpty()]
-        [string] $SiblingBasePath
+        [string] $SiblingBasePath,
+
+        [Parameter(Mandatory = $false)]
+        [AllowEmptyString()]
+        [string] $CurrentKindName
     )
 
     $Markdown = Remove-H1Headers -Markdown $Markdown
     $Markdown = Convert-ImagePaths -Markdown $Markdown
-    $Markdown = Convert-KindReferences -Markdown $Markdown
-    $Markdown = Convert-MarkdownLinks -Markdown $Markdown -SiblingBasePath $SiblingBasePath
+    $Markdown = Convert-KindReferences -Markdown $Markdown -CurrentKindName $CurrentKindName
+    $Markdown = Convert-MarkdownLinks -Markdown $Markdown -SiblingBasePath $SiblingBasePath -CurrentKindName $CurrentKindName
     $Markdown = Convert-Callouts -Markdown $Markdown
     $Markdown = [regex]::Replace($Markdown, '(?s)```mermaid\r?\n.*?```', {
             param([System.Text.RegularExpressions.Match] $match)
@@ -630,7 +669,7 @@ foreach ($nodeKind in $nodeKinds) {
             $graphSections.Edges,
             $graphSections.Properties
         )
-        $bodyMarkdown = Convert-BodyMarkdown -Markdown $bodyMarkdown -SiblingBasePath "$DocsBasePath/nodes"
+        $bodyMarkdown = Convert-BodyMarkdown -Markdown $bodyMarkdown -SiblingBasePath "$DocsBasePath/nodes" -CurrentKindName $name
 
         [string] $outputFilePath = Join-Path -Path $nodesOutputDir -ChildPath "$($name.ToLower()).mdx"
         [string] $iconPath = "$IconBasePath/$($name.ToLower()).png"
@@ -665,7 +704,7 @@ foreach ($relationshipKind in $relationshipKinds) {
             $edgeSchemaMarkdown,
             (Get-Content -Path $descriptionFilePath -Raw)
         )
-        $bodyMarkdown = Convert-BodyMarkdown -Markdown $bodyMarkdown -SiblingBasePath "$DocsBasePath/edges"
+        $bodyMarkdown = Convert-BodyMarkdown -Markdown $bodyMarkdown -SiblingBasePath "$DocsBasePath/edges" -CurrentKindName $name
 
         [string] $outputFilePath = Join-Path -Path $edgesOutputDir -ChildPath "$($name.ToLower()).mdx"
 
