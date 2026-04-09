@@ -441,8 +441,11 @@ function Get-NodeGraphSections {
         $outgoingMarkdown = "### Outbound Edges`n`n$outgoing"
     }
 
+    [string] $edgeNoteMarkdown = "<Note>`nThe tables below list edges defined by the $extensionName extension only. Additional edges to or from this node may be created by other extensions.`n</Note>"
+
     [string] $edgesMarkdown = Join-MarkdownSections -Sections @(
         '## Edges',
+        $edgeNoteMarkdown,
         $mermaid,
         $incomingMarkdown,
         $outgoingMarkdown
