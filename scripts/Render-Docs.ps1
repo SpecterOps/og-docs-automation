@@ -278,7 +278,7 @@ if ($Mode -eq 'Official') {
     Write-Host '== Step 7: Rendering docs.json ==' -ForegroundColor Cyan
     [string] $extensionOfficialDocsDir = Join-Path -Path $officialDocsDir -ChildPath ('opengraph/extensions/{0}' -f $extensionSlug)
     try {
-        & (Join-Path -Path $PSScriptRoot -ChildPath 'Render-OfficialDocsJson.ps1') -ExtensionName $extensionName -DocsDir $extensionOfficialDocsDir
+        & (Join-Path -Path $PSScriptRoot -ChildPath 'Render-OfficialDocsJson.ps1') -ExtensionShortName $extensionShortName -DocsDir $extensionOfficialDocsDir
     }
     catch {
         Write-Error "Step 7 (Render-OfficialDocsJson) failed: $($_.Exception.Message)`nScriptStackTrace: $($_.ScriptStackTrace)"

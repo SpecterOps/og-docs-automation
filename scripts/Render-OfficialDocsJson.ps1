@@ -15,7 +15,7 @@
 param (
     [Parameter(Mandatory = $true)]
     [ValidateNotNullOrEmpty()]
-    [string] $ExtensionName,
+    [string] $ExtensionShortName,
 
     [Parameter(Mandatory = $true)]
     [ValidateNotNullOrEmpty()]
@@ -24,23 +24,7 @@ param (
 
 Set-StrictMode -Version Latest
 
-function Get-ExtensionSlug {
-    [OutputType([string])]
-    param(
-        [Parameter(Mandatory = $true)]
-        [ValidateNotNullOrEmpty()]
-        [string] $ExtensionName
-    )
-
-    [string] $slug = $ExtensionName.ToLower()
-    if ($slug -match '^so[a-z0-9]') {
-        return $slug.Substring(2)
-    }
-
-    return $slug
-}
-
-[string] $extensionSlug = Get-ExtensionSlug -ExtensionName $ExtensionName
+[string] $extensionSlug = $ExtensionShortName.ToLower()
 
 if (-not (Test-Path -Path $DocsDir -PathType Container)) {
     throw "Extension directory not found: $DocsDir"
@@ -81,7 +65,7 @@ if (Test-Path -Path $edgesDir -PathType Container) {
 }
 
 $docs = [ordered]@{
-    group = $ExtensionName
+    group = $ExtensionShortName
     pages = @(
         $rootPages +
         @(
