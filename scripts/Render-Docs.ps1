@@ -156,10 +156,10 @@ if ($Mode -eq 'Official') {
     }
 
     [string] $officialDocsDir = Join-Path -Path $repoRoot -ChildPath 'docs/official-docs'
-    [string] $imagesOutputDirRelPath = '/images/extensions/{0}/reference' -f $extensionSlug
+    [string] $imagesOutputDirRelPath = '/images/extensions/{0}' -f $extensionSlug
     [string] $imagesOutputDirFullPath = Join-Path -Path $officialDocsDir -ChildPath $imagesOutputDirRelPath
-    [string] $docsRefBasePath = '/opengraph/extensions/{0}/reference' -f $extensionSlug
-    [string] $opengraphRefDir = Join-Path -Path $officialDocsDir -ChildPath ('opengraph/extensions/{0}/reference' -f $extensionSlug)
+    [string] $docsRefBasePath = '/opengraph/extensions/{0}' -f $extensionSlug
+    [string] $opengraphRefDir = Join-Path -Path $officialDocsDir -ChildPath ('opengraph/extensions/{0}' -f $extensionSlug)
 
     # Step 0: Clean the output directory
     Write-Host '== Step 0: Cleaning output directory ==' -ForegroundColor Cyan

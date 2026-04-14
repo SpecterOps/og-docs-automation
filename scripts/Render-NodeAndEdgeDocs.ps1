@@ -4,7 +4,7 @@
 
 .DESCRIPTION
     Reads node kinds and edge kinds from the BloodHound extension schema and
-    creates one MDX file per kind under docs/official-docs/opengraph/extensions/<ExtensionName>/reference.
+    creates one MDX file per kind under docs/official-docs/opengraph/extensions/<ExtensionName>.
 
     Generated files contain frontmatter and the content from descriptions/nodes or descriptions/edges.
 
@@ -929,9 +929,9 @@ foreach ($relationshipKind in $relationshipKinds) {
 }
 
 [string] $extensionSlug = Get-ExtensionSlug -ExtensionName $extensionName
-[string] $referenceRoot = Join-Path -Path (Join-Path -Path $OutputDir -ChildPath $extensionSlug) -ChildPath 'reference'
-[string] $nodesOutputDir = Join-Path -Path $referenceRoot -ChildPath 'nodes'
-[string] $edgesOutputDir = Join-Path -Path $referenceRoot -ChildPath 'edges'
+[string] $extensionOutputDir = Join-Path -Path $OutputDir -ChildPath $extensionSlug
+[string] $nodesOutputDir = Join-Path -Path $extensionOutputDir -ChildPath 'nodes'
+[string] $edgesOutputDir = Join-Path -Path $extensionOutputDir -ChildPath 'edges'
 [hashtable] $relationshipKindMap = @{}
 
 foreach ($relationshipKind in $relationshipKinds) {

@@ -49,11 +49,11 @@ Generates MDX files with frontmatter, Mintlify components, and a `docs.json` nav
 |--------|--------|
 | Icon PNGs | Render-CustomNodeIcons |
 | Static image copy | *(built into Render-Docs)* |
-| `queries.mdx` | Render-CustomQueries |
-| `privilege_zone_rules.mdx` | Render-PrivilegeZoneRules |
-| Per-node and per-edge `.mdx` files | Render-NodeAndEdgeDocs |
-| `schema.mdx` | Render-Schema |
-| `docs.json` | Render-OfficialDocsJson |
+| `opengraph/extensions/<slug>/queries.mdx` | Render-CustomQueries |
+| `opengraph/extensions/<slug>/privilege-zone-rules.mdx` | Render-PrivilegeZoneRules |
+| `opengraph/extensions/<slug>/nodes/*.mdx` and `edges/*.mdx` | Render-NodeAndEdgeDocs |
+| `opengraph/extensions/<slug>/schema.mdx` | Render-Schema |
+| `opengraph/extensions/<slug>/docs.json` | Render-OfficialDocsJson |
 
 ## Configuration reference
 
