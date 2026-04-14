@@ -562,6 +562,25 @@ function Get-BasicEdgeSchemaSection {
     return "## Edge Schema`n`n- Traversable: $Traversable"
 }
 
+function Convert-TraversableToEmoji {
+    [OutputType([string])]
+    param(
+        [Parameter(Mandatory = $true)]
+        [ValidateNotNullOrEmpty()]
+        [string] $Traversable
+    )
+
+    if ($Traversable -eq 'true') {
+        return '✅'
+    }
+
+    if ($Traversable -eq 'false') {
+        return '❌'
+    }
+
+    return $Traversable
+}
+
 function Get-EdgeSchemaMap {
     [OutputType([hashtable])]
     param(
@@ -669,6 +688,7 @@ function New-NodeEdgeSectionMarkdown {
         [string] $edgeLink = '[{0}]({1}/edges/{2})' -f $edgeName, $DocsBasePath, $edgeName.ToLower()
         [psobject] $relKind = $RelationshipKindMap[$edgeName]
         [string] $traversable = if ($relKind -and [bool] $relKind.is_traversable) { 'true' } else { 'false' }
+        [string] $traversableDisplay = Convert-TraversableToEmoji -Traversable $traversable
 
         if ($NodeName -in $schema.Destinations.Name) {
             [string] $sourceLinks = ($schema.Sources | ForEach-Object {
@@ -680,7 +700,7 @@ function New-NodeEdgeSectionMarkdown {
                         '[{0}]({1})' -f $_.Name, $nodeLinkPath.ToLower()
                     }
                 }) -join ', '
-            $inboundRows.Add("| $edgeLink | $sourceLinks | $traversable |")
+            $inboundRows.Add("| $edgeLink | $sourceLinks | $traversableDisplay |")
         }
 
         if ($NodeName -in $schema.Sources.Name) {
@@ -693,7 +713,7 @@ function New-NodeEdgeSectionMarkdown {
                         '[{0}]({1})' -f $_.Name, $nodeLinkPath.ToLower()
                     }
                 }) -join ', '
-            $outboundRows.Add("| $edgeLink | $destinationLinks | $traversable |")
+            $outboundRows.Add("| $edgeLink | $destinationLinks | $traversableDisplay |")
         }
     }
 
@@ -749,13 +769,35 @@ function Add-TraversableToEdgeSchema {
     )
 
     [string] $edgeSchemaHeading = '## Edge Schema'
-    [string] $traversableLine = "- Traversable: $Traversable"
+    [string] $traversableEmoji = Convert-TraversableToEmoji -Traversable $Traversable
+    [string] $traversableLine = "- Traversable: $traversableEmoji"
 
-    if ($Markdown -match '(?m)^-?\s*Traversable:\s+(true|false)\s*$') {
+    if ($Markdown -match '(?m)^-?\s*Traversable:\s+(\S+)\s*$') {
         return $Markdown
     }
 
     if ($Markdown -match '(?m)^## Edge Schema\s*$') {
+        if ($Markdown -match '(?ms)^## Edge Schema\s*\r?\n(?<schemaBody>.*?)(?:\r?\n## |\z)') {
+            [string] $schemaBody = $matches['schemaBody']
+            if ($schemaBody -match '(?m)^- Destination:\s+.+$') {
+                return [regex]::Replace(
+                    $Markdown,
+                    '(?m)^(- Destination:\s+.+)$',
+                    ('$1' + "`r`n" + $traversableLine),
+                    1
+                )
+            }
+
+            if ($schemaBody -match '(?m)^- Source:\s+.+$') {
+                return [regex]::Replace(
+                    $Markdown,
+                    '(?m)^(- Source:\s+.+)$',
+                    ('$1' + "`r`n" + $traversableLine),
+                    1
+                )
+            }
+        }
+
         return [regex]::Replace(
             $Markdown,
             '(?ms)^## Edge Schema\s*\r?\n(?:\r?\n)*',
