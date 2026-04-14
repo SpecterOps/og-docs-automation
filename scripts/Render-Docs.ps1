@@ -43,6 +43,9 @@ if (-not (Test-Path -Path $ConfigFile -PathType Leaf)) {
 if (-not $config.extensionSchemaPath) {
     throw "Config file must specify 'extensionSchemaPath'."
 }
+if (-not $config.gitHubBaseUrl) {
+    throw "Config file must specify 'gitHubBaseUrl'."
+}
 
 # Resolve paths relative to the repository root
 function Resolve-ConfigPath([string] $relativePath) {
@@ -61,6 +64,54 @@ function Get-ConfigPath([string] $key, [string] $default = '') {
     return ''
 }
 
+function Get-RelativePath([string] $BasePath, [string] $TargetPath) {
+    if ([string]::IsNullOrWhiteSpace($BasePath) -or [string]::IsNullOrWhiteSpace($TargetPath)) {
+        return ''
+    }
+
+    [string] $resolvedBasePath = [System.IO.Path]::GetFullPath($BasePath)
+    [string] $resolvedTargetPath = [System.IO.Path]::GetFullPath($TargetPath)
+    [string[]] $baseParts = ($resolvedBasePath.TrimEnd('/', '\') -split '[\\/]') | Where-Object { $_ -ne '' }
+    [string[]] $targetParts = ($resolvedTargetPath.TrimEnd('/', '\') -split '[\\/]') | Where-Object { $_ -ne '' }
+
+    [int] $commonLength = 0
+    [int] $maxCommon = [Math]::Min($baseParts.Length, $targetParts.Length)
+    while ($commonLength -lt $maxCommon -and $baseParts[$commonLength] -eq $targetParts[$commonLength]) {
+        $commonLength++
+    }
+
+    if ($commonLength -eq 0) {
+        return $resolvedTargetPath -replace '\\', '/'
+    }
+
+    [string[]] $relativeParts = @()
+    for ($i = $commonLength; $i -lt $baseParts.Length; $i++) {
+        $relativeParts += '..'
+    }
+    for ($i = $commonLength; $i -lt $targetParts.Length; $i++) {
+        $relativeParts += $targetParts[$i]
+    }
+
+    if ($relativeParts.Length -eq 0) {
+        return '.'
+    }
+
+    return ($relativeParts -join '/')
+}
+
+function Get-ExtensionSlug([string] $ExtensionName) {
+    if ([string]::IsNullOrWhiteSpace($ExtensionName)) {
+        return ''
+    }
+
+    [string] $slug = $ExtensionName.ToLower()
+    if ($slug -match '^so[a-z0-9]') {
+        return $slug.Substring(2)
+    }
+
+    return $slug
+}
+
 [string] $ExtensionSchemaPath = Resolve-ConfigPath $config.extensionSchemaPath
 [string] $GitHubBaseUrl      = Get-ConfigValue 'gitHubBaseUrl'
 [string] $StripTitlePrefix   = Get-ConfigValue 'stripTitlePrefix'
@@ -69,17 +120,16 @@ function Get-ConfigPath([string] $key, [string] $default = '') {
 [string] $NodeDescDir        = Get-ConfigPath  'nodeDescriptionsDir' 'descriptions/nodes'
 [string] $EdgeDescDir        = Get-ConfigPath  'edgeDescriptionsDir' 'descriptions/edges'
 [string] $ImagesDir          = Get-ConfigPath  'imagesDir' 'descriptions/images'
+[bool]   $OpenHoundStructure = Get-ConfigValue 'openHoundStructure' $true
 [int]    $IconSize         = Get-ConfigValue 'iconSize' 32
 [double] $IconScale        = Get-ConfigValue 'iconScale' 0.55
 
-# Parse extension JSON to derive the extension name
+# Parse extension JSON
 [psobject] $extensionJson = Get-Content -Path $ExtensionSchemaPath | ConvertFrom-Json
 [string] $extensionName = $extensionJson.schema.name
-[string] $extensionSlug = $extensionName.ToLower()
+[string] $extensionShortName = Get-ConfigValue 'extensionShortName' $extensionName
+[string] $extensionSlug = Get-ExtensionSlug -ExtensionName $extensionName
 
-if ([string]::IsNullOrEmpty($GitHubBaseUrl)) {
-    $GitHubBaseUrl = 'https://github.com/SpecterOps/{0}' -f $extensionName
-}
 $GitHubBaseUrl = $GitHubBaseUrl.TrimEnd('/')
 
 Write-Host "== Mode: $Mode | Extension: $extensionName ==" -ForegroundColor Cyan
@@ -161,11 +211,11 @@ if ($Mode -eq 'Official') {
         [string] $queriesOutputPath = Join-Path -Path $opengraphRefDir -ChildPath 'queries.mdx'
         [string] $savedSearchesGitHubPath = '{0}/tree/main/{1}' -f $GitHubBaseUrl, (Get-ConfigValue 'savedSearchesDir' 'extension/saved_searches')
         [hashtable] $customQueriesParams = @{
-            ExtensionName       = $extensionName
-            OutputPath          = $queriesOutputPath
+            ExtensionShortName    = $extensionShortName
+            OutputPath            = $queriesOutputPath
             SavedSearchesLinkPath = $savedSearchesGitHubPath
-            StripTitlePrefix    = $StripTitlePrefix
-            OfficialDocs        = $true
+            StripTitlePrefix      = $StripTitlePrefix
+            OfficialDocs          = $true
         }
         if ($SavedSearchesDir) { $customQueriesParams['InputDir'] = $SavedSearchesDir }
         try {
@@ -187,11 +237,11 @@ if ($Mode -eq 'Official') {
         [string] $privilegeZonePath = Join-Path -Path $opengraphRefDir -ChildPath 'privilege-zone-rules.mdx'
         [string] $rulesGitHubPath = '{0}/tree/main/{1}' -f $GitHubBaseUrl, (Get-ConfigValue 'zoneRulesDir' 'extension/privilege_zone_rules')
         [hashtable] $privilegeZoneParams = @{
-            ExtensionName = $extensionName
-            OutputPath    = $privilegeZonePath
-            RulesLinkPath = $rulesGitHubPath
-            StripTitlePrefix = $StripTitlePrefix
-            OfficialDocs  = $true
+            ExtensionShortName   = $extensionShortName
+            OutputPath           = $privilegeZonePath
+            RulesLinkPath        = $rulesGitHubPath
+            StripTitlePrefix     = $StripTitlePrefix
+            OfficialDocs         = $true
         }
         if ($ZoneRulesDir) { $privilegeZoneParams['InputDir'] = $ZoneRulesDir }
         try {
@@ -206,7 +256,7 @@ if ($Mode -eq 'Official') {
     # Step 5: Render node and edge documentation MDX files
     Write-Host '== Step 5: Rendering node and edge docs ==' -ForegroundColor Cyan
     try {
-        & (Join-Path -Path $PSScriptRoot -ChildPath 'Render-NodeAndEdgeDocs.ps1') -ExtensionSchemaPath $ExtensionSchemaPath -NodeDescriptionsDir $NodeDescDir -EdgeDescriptionsDir $EdgeDescDir -IconBasePath $imagesOutputDirRelPath -DocsBasePath $docsRefBasePath
+        & (Join-Path -Path $PSScriptRoot -ChildPath 'Render-NodeAndEdgeDocs.ps1') -ExtensionSchemaPath $ExtensionSchemaPath -ExtensionShortName $extensionShortName -NodeDescriptionsDir $NodeDescDir -EdgeDescriptionsDir $EdgeDescDir -IconBasePath $imagesOutputDirRelPath -DocsBasePath $docsRefBasePath -OpenHoundStructure:$OpenHoundStructure
     }
     catch {
         Write-Error "Step 5 (Render-NodeAndEdgeDocs) failed: $($_.Exception.Message)`nScriptStackTrace: $($_.ScriptStackTrace)"
@@ -217,7 +267,7 @@ if ($Mode -eq 'Official') {
     Write-Host '== Step 6: Rendering schema ==' -ForegroundColor Cyan
     [string] $schemaOutputPath = Join-Path -Path $opengraphRefDir -ChildPath 'schema.mdx'
     try {
-        & (Join-Path -Path $PSScriptRoot -ChildPath 'Render-Schema.ps1') -ExtensionSchemaPath $ExtensionSchemaPath -OutputPath $schemaOutputPath -NodeLinkBasePath "$docsRefBasePath/nodes" -EdgeLinkBasePath "$docsRefBasePath/edges" -IconBasePath $imagesOutputDirRelPath -GitHubBaseUrl $GitHubBaseUrl -OfficialDocs
+        & (Join-Path -Path $PSScriptRoot -ChildPath 'Render-Schema.ps1') -ExtensionSchemaPath $ExtensionSchemaPath -ExtensionShortName $extensionShortName -OutputPath $schemaOutputPath -NodeLinkBasePath "$docsRefBasePath/nodes" -EdgeLinkBasePath "$docsRefBasePath/edges" -IconBasePath $imagesOutputDirRelPath -GitHubBaseUrl $GitHubBaseUrl -OfficialDocs
     }
     catch {
         Write-Error "Step 6 (Render-Schema) failed: $($_.Exception.Message)`nScriptStackTrace: $($_.ScriptStackTrace)"
@@ -241,6 +291,8 @@ if ($Mode -eq 'Official') {
 # ---------------------------------------------------------------------------
 if ($Mode -eq 'Local') {
     [string] $docsDir = Join-Path -Path $repoRoot -ChildPath 'docs'
+    [string] $nodeLinkBasePath = Get-RelativePath -BasePath $docsDir -TargetPath $NodeDescDir
+    [string] $edgeLinkBasePath = Get-RelativePath -BasePath $docsDir -TargetPath $EdgeDescDir
 
     # Step 1: Render custom node icons
     Write-Host '== Step 1: Rendering custom node icons ==' -ForegroundColor Cyan
@@ -262,7 +314,7 @@ if ($Mode -eq 'Local') {
     else {
         [string] $savedSearchesLinkPath = '../' + (Get-ConfigValue 'savedSearchesDir' 'extension/saved_searches')
         [hashtable] $customQueriesParams = @{
-            ExtensionName         = $extensionName
+            ExtensionShortName    = $extensionShortName
             OutputPath            = (Join-Path -Path $docsDir -ChildPath 'queries.md')
             SavedSearchesLinkPath = $savedSearchesLinkPath
             StripTitlePrefix      = $StripTitlePrefix
@@ -286,10 +338,10 @@ if ($Mode -eq 'Local') {
     else {
         [string] $zoneRulesLinkPath = '../' + (Get-ConfigValue 'zoneRulesDir' 'extension/privilege_zone_rules')
         [hashtable] $privilegeZoneParams = @{
-            ExtensionName = $extensionName
-            OutputPath    = (Join-Path -Path $docsDir -ChildPath 'privilege-zone-rules.md')
-            RulesLinkPath = $zoneRulesLinkPath
-            StripTitlePrefix = $StripTitlePrefix
+            ExtensionShortName   = $extensionShortName
+            OutputPath           = (Join-Path -Path $docsDir -ChildPath 'privilege-zone-rules.md')
+            RulesLinkPath        = $zoneRulesLinkPath
+            StripTitlePrefix     = $StripTitlePrefix
         }
         if ($ZoneRulesDir) { $privilegeZoneParams['InputDir'] = $ZoneRulesDir }
         try {
@@ -304,7 +356,7 @@ if ($Mode -eq 'Local') {
     # Step 4: Render schema markdown
     Write-Host '== Step 4: Rendering schema ==' -ForegroundColor Cyan
     try {
-        & (Join-Path -Path $PSScriptRoot -ChildPath 'Render-Schema.ps1') -ExtensionSchemaPath $ExtensionSchemaPath -OutputPath (Join-Path -Path $docsDir -ChildPath 'schema.md') -IconBasePath 'icons' -GitHubBaseUrl $GitHubBaseUrl
+        & (Join-Path -Path $PSScriptRoot -ChildPath 'Render-Schema.ps1') -ExtensionSchemaPath $ExtensionSchemaPath -ExtensionShortName $extensionShortName -OutputPath (Join-Path -Path $docsDir -ChildPath 'schema.md') -NodeLinkBasePath $nodeLinkBasePath -EdgeLinkBasePath $edgeLinkBasePath -IconBasePath 'icons' -GitHubBaseUrl $GitHubBaseUrl
     }
     catch {
         Write-Error "Step 4 (Render-Schema) failed: $($_.Exception.Message)`nScriptStackTrace: $($_.ScriptStackTrace)"

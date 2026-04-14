@@ -57,17 +57,19 @@ Generates MDX files with frontmatter, Mintlify components, and a `docs.json` nav
 
 ## Configuration reference
 
-The `og-docs.json` file configures all paths and settings. Only `extensionSchemaPath` is required; everything else has sensible defaults.
+The `og-docs.json` file configures all paths and settings.
 
 | Key | Type | Required | Default | Description |
 |-----|------|----------|---------|-------------|
 | `extensionSchemaPath` | string | Yes | — | Path to the extension schema JSON file (e.g. `extension/schema.json`). |
-| `gitHubBaseUrl` | string | No | `https://github.com/SpecterOps/{ExtensionName}` | Base URL of the GitHub repository. Used to generate source links in official docs. |
+| `extensionShortName` | string | No | `schema.name` | Short extension name used in generated docs metadata for query, privilege zone rule, and schema pages. Set this when the concise docs name should differ from `schema.name` (for example, `SCIM` when `schema.name` is `SOSCIM`). |
+| `gitHubBaseUrl` | string | Yes | — | Base URL of the GitHub repository. Used to generate source links in official docs. |
 | `stripTitlePrefix` | string | No | `""` | Prefix stripped from query and rule names in headings (e.g. `"MyExt: "`). |
 | `savedSearchesDir` | string | No | `extension/saved_searches` | Directory containing custom Cypher query JSON files. |
 | `zoneRulesDir` | string | No | `extension/privilege_zone_rules` | Directory containing privilege zone rule JSON files. |
 | `nodeDescriptionsDir` | string | No | `descriptions/nodes` | Directory containing per-node `.md` description files. Used by Render-NodeAndEdgeDocs in official mode. |
 | `edgeDescriptionsDir` | string | No | `descriptions/edges` | Directory containing per-edge `.md` description files. Used by Render-NodeAndEdgeDocs in official mode. |
+| `openHoundStructure` | boolean | No | `true` | When `true`, official docs are assembled from the description files plus supplemental graph docs under `docs/graph/...`. When `false`, official docs are rendered from each node/edge description file alone. |
 | `imagesDir` | string | No | `descriptions/images` | Directory containing static image assets. Copied to official docs output with lowercased filenames. |
 | `iconSize` | integer | No | `32` | Width and height in pixels for generated node icon PNGs (16–512). |
 | `iconScale` | number | No | `0.55` | Scale of the Font Awesome icon within the circle (0.1–1.0). |

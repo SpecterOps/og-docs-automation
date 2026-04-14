@@ -1,11 +1,13 @@
 {
     "extensionSchemaPath": "extension/schema.json",
+    "extensionShortName": "Okta",
     "gitHubBaseUrl": "https://github.com/SpecterOps/openhound-okta",
     "stripTitlePrefix": "Okta: ",
     "savedSearchesDir": "extension/saved_searches",
     "zoneRulesDir": "extension/privilege_zone_rules",
     "nodeDescriptionsDir": "descriptions/nodes",
     "edgeDescriptionsDir": "descriptions/edges",
+    "openHoundStructure": true,
     "imagesDir": "descriptions/images",
     "iconSize": 32,
     "iconScale": 0.55

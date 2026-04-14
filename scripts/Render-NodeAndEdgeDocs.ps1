@@ -28,6 +28,10 @@ param (
     [ValidateNotNullOrEmpty()]
     [string] $ExtensionSchemaPath,
 
+    [Parameter(Mandatory = $true)]
+    [ValidateNotNullOrEmpty()]
+    [string] $ExtensionShortName,
+
     [Parameter(Mandatory = $false)]
     [ValidateNotNullOrEmpty()]
     [string] $NodeDescriptionsDir = (Join-Path -Path $PSScriptRoot -ChildPath '../../../descriptions/nodes'),
@@ -54,13 +58,32 @@ param (
 
     [Parameter(Mandatory = $false)]
     [ValidateNotNullOrEmpty()]
-    [string] $DocsBasePath = '..'
+    [string] $DocsBasePath = '..',
+
+    [Parameter(Mandatory = $false)]
+    [bool] $OpenHoundStructure = $true
 )
 
 Set-StrictMode -Version Latest
 
 [hashtable] $script:NodeKindLookup = @{}
 [hashtable] $script:EdgeKindLookup = @{}
+
+function Get-ExtensionSlug {
+    [OutputType([string])]
+    param(
+        [Parameter(Mandatory = $true)]
+        [ValidateNotNullOrEmpty()]
+        [string] $ExtensionName
+    )
+
+    [string] $slug = $ExtensionName.ToLower()
+    if ($slug -match '^so[a-z0-9]') {
+        return $slug.Substring(2)
+    }
+
+    return $slug
+}
 
 function Test-IsKnownKind {
     [OutputType([bool])]
@@ -476,7 +499,7 @@ function Get-NodeGraphSections {
         $outgoingMarkdown = "### Outbound Edges`n`n$outgoing"
     }
 
-    [string] $edgeNoteMarkdown = "<Note>`nThe tables below list edges defined by the $extensionName extension only. Additional edges to or from this node may be created by other extensions.`n</Note>"
+    [string] $edgeNoteMarkdown = "<Note>`nThe tables below list edges defined by the $ExtensionShortName extension only. Additional edges to or from this node may be created by other extensions.`n</Note>"
 
     [string] $edgesMarkdown = Join-MarkdownSections -Sections @(
         '## Edges',
@@ -525,6 +548,225 @@ function Get-EdgeSchemaSection {
         "Traversable: $Traversable",
         $table,
         $mermaid
+    )
+}
+
+function Get-BasicEdgeSchemaSection {
+    [OutputType([string])]
+    param(
+        [Parameter(Mandatory = $true)]
+        [ValidateNotNullOrEmpty()]
+        [string] $Traversable
+    )
+
+    return "## Edge Schema`n`n- Traversable: $Traversable"
+}
+
+function Get-EdgeSchemaMap {
+    [OutputType([hashtable])]
+    param(
+        [Parameter(Mandatory = $true)]
+        [ValidateNotNullOrEmpty()]
+        [string] $EdgeDescriptionsDir
+    )
+
+    [hashtable] $map = @{}
+    [regex] $linkRegex = [regex]'\[([^\]]+)\]\(([^)]+)\)'
+
+    foreach ($file in Get-ChildItem -Path $EdgeDescriptionsDir -Filter '*.md' -File) {
+        [string] $content = Get-Content -Path $file.FullName -Raw
+        [string] $edgeName = $file.BaseName
+        [psobject[]] $sources = @()
+        [psobject[]] $destinations = @()
+
+        if ($content -match '(?m)^- Source:\s*(.+)$') {
+            [string] $rawSourceLine = $matches[1]
+            $sources = @($linkRegex.Matches($rawSourceLine) | ForEach-Object {
+                    [PSCustomObject]@{
+                        Name = $_.Groups[1].Value
+                        Url  = $_.Groups[2].Value
+                    }
+                })
+        }
+        else {
+            Write-Warning "Edge '$edgeName' ($($file.Name)): missing '- Source:' line."
+        }
+
+        if ($content -match '(?m)^- Destination:\s*(.+)$') {
+            [string] $rawDestinationLine = $matches[1]
+            $destinations = @($linkRegex.Matches($rawDestinationLine) | ForEach-Object {
+                    [PSCustomObject]@{
+                        Name = $_.Groups[1].Value
+                        Url  = $_.Groups[2].Value
+                    }
+                })
+        }
+        else {
+            Write-Warning "Edge '$edgeName' ($($file.Name)): missing '- Destination:' line."
+        }
+
+        $map[$edgeName] = [PSCustomObject]@{
+            Sources      = $sources
+            Destinations = $destinations
+        }
+    }
+
+    return $map
+}
+
+function Format-EdgeTable {
+    [OutputType([string])]
+    param(
+        [Parameter(Mandatory = $true)]
+        [ValidateNotNullOrEmpty()]
+        [string] $Heading,
+
+        [Parameter(Mandatory = $true)]
+        [ValidateNotNullOrEmpty()]
+        [string] $PeerColumnName,
+
+        [Parameter(Mandatory = $true)]
+        [AllowEmptyCollection()]
+        [string[]] $Rows,
+
+        [Parameter(Mandatory = $true)]
+        [ValidateNotNullOrEmpty()]
+        [string] $EmptyMessage
+    )
+
+    [string] $result = "### $Heading`n`n"
+    if ($Rows.Count -gt 0) {
+        $result += "| Edge Type | $PeerColumnName | Traversable |`n"
+        $result += "| --------- | $('-' * $PeerColumnName.Length) | ----------- |`n"
+        $result += ($Rows -join "`n")
+    }
+    else {
+        $result += $EmptyMessage
+    }
+
+    return $result
+}
+
+function New-NodeEdgeSectionMarkdown {
+    [OutputType([string])]
+    param(
+        [Parameter(Mandatory = $true)]
+        [ValidateNotNullOrEmpty()]
+        [string] $NodeName,
+
+        [Parameter(Mandatory = $true)]
+        [hashtable] $EdgeSchemaMap,
+
+        [Parameter(Mandatory = $true)]
+        [hashtable] $RelationshipKindMap
+    )
+
+    [System.Collections.Generic.List[string]] $inboundRows = [System.Collections.Generic.List[string]]::new()
+    [System.Collections.Generic.List[string]] $outboundRows = [System.Collections.Generic.List[string]]::new()
+
+    foreach ($edgeName in ($EdgeSchemaMap.Keys | Sort-Object)) {
+        [psobject] $schema = $EdgeSchemaMap[$edgeName]
+        [string] $edgeLink = '[{0}]({1}/edges/{2})' -f $edgeName, $DocsBasePath, $edgeName.ToLower()
+        [psobject] $relKind = $RelationshipKindMap[$edgeName]
+        [string] $traversable = if ($relKind -and [bool] $relKind.is_traversable) { 'true' } else { 'false' }
+
+        if ($NodeName -in $schema.Destinations.Name) {
+            [string] $sourceLinks = ($schema.Sources | ForEach-Object {
+                    [string] $nodeLinkPath = Get-KindLinkPath -KindName $_.Name
+                    if ([string]::IsNullOrWhiteSpace($nodeLinkPath)) {
+                        $_.Name
+                    }
+                    else {
+                        '[{0}]({1})' -f $_.Name, $nodeLinkPath.ToLower()
+                    }
+                }) -join ', '
+            $inboundRows.Add("| $edgeLink | $sourceLinks | $traversable |")
+        }
+
+        if ($NodeName -in $schema.Sources.Name) {
+            [string] $destinationLinks = ($schema.Destinations | ForEach-Object {
+                    [string] $nodeLinkPath = Get-KindLinkPath -KindName $_.Name
+                    if ([string]::IsNullOrWhiteSpace($nodeLinkPath)) {
+                        $_.Name
+                    }
+                    else {
+                        '[{0}]({1})' -f $_.Name, $nodeLinkPath.ToLower()
+                    }
+                }) -join ', '
+            $outboundRows.Add("| $edgeLink | $destinationLinks | $traversable |")
+        }
+    }
+
+    return Join-MarkdownSections -Sections @(
+        '## Edges',
+        "<Note>`nThe tables below list edges defined by the $ExtensionShortName extension only. Additional edges to or from this node may be created by other extensions.`n</Note>",
+        (Format-EdgeTable -Heading 'Inbound Edges' -PeerColumnName 'Source Node Types' -Rows $inboundRows -EmptyMessage "No inbound edges are defined by the $ExtensionShortName extension for this node."),
+        (Format-EdgeTable -Heading 'Outbound Edges' -PeerColumnName 'Destination Node Types' -Rows $outboundRows -EmptyMessage "No outbound edges are defined by the $ExtensionShortName extension for this node.")
+    )
+}
+
+function Add-NodeEdgeSections {
+    [OutputType([string])]
+    param(
+        [Parameter(Mandatory = $true)]
+        [AllowEmptyString()]
+        [string] $Markdown,
+
+        [Parameter(Mandatory = $true)]
+        [AllowEmptyString()]
+        [string] $EdgeSectionMarkdown
+    )
+
+    if ([string]::IsNullOrWhiteSpace($EdgeSectionMarkdown)) {
+        return $Markdown
+    }
+
+    if ($Markdown -match '(?m)^## Properties\s*$') {
+        return [regex]::Replace(
+            $Markdown,
+            '(?m)^## Properties\s*$',
+            ($EdgeSectionMarkdown + "`r`n`r`n## Properties"),
+            1
+        )
+    }
+
+    return Join-MarkdownSections -Sections @(
+        $Markdown,
+        $EdgeSectionMarkdown
+    )
+}
+
+function Add-TraversableToEdgeSchema {
+    [OutputType([string])]
+    param(
+        [Parameter(Mandatory = $true)]
+        [AllowEmptyString()]
+        [string] $Markdown,
+
+        [Parameter(Mandatory = $true)]
+        [ValidateNotNullOrEmpty()]
+        [string] $Traversable
+    )
+
+    [string] $edgeSchemaHeading = '## Edge Schema'
+    [string] $traversableLine = "- Traversable: $Traversable"
+
+    if ($Markdown -match '(?m)^-?\s*Traversable:\s+(true|false)\s*$') {
+        return $Markdown
+    }
+
+    if ($Markdown -match '(?m)^## Edge Schema\s*$') {
+        return [regex]::Replace(
+            $Markdown,
+            '(?ms)^## Edge Schema\s*\r?\n(?:\r?\n)*',
+            "$edgeSchemaHeading`r`n`r`n$traversableLine`r`n",
+            1
+        )
+    }
+
+    return Join-MarkdownSections -Sections @(
+        (Get-BasicEdgeSchemaSection -Traversable $Traversable),
+        $Markdown
     )
 }
 
@@ -637,9 +879,22 @@ foreach ($relationshipKind in $relationshipKinds) {
     }
 }
 
-[string] $referenceRoot = Join-Path -Path (Join-Path -Path $OutputDir -ChildPath $extensionName.ToLower()) -ChildPath 'reference'
+[string] $extensionSlug = Get-ExtensionSlug -ExtensionName $extensionName
+[string] $referenceRoot = Join-Path -Path (Join-Path -Path $OutputDir -ChildPath $extensionSlug) -ChildPath 'reference'
 [string] $nodesOutputDir = Join-Path -Path $referenceRoot -ChildPath 'nodes'
 [string] $edgesOutputDir = Join-Path -Path $referenceRoot -ChildPath 'edges'
+[hashtable] $relationshipKindMap = @{}
+
+foreach ($relationshipKind in $relationshipKinds) {
+    if (-not [string]::IsNullOrWhiteSpace([string] $relationshipKind.name)) {
+        $relationshipKindMap[[string] $relationshipKind.name] = $relationshipKind
+    }
+}
+
+[hashtable] $edgeSchemaMap = @{}
+if (-not $OpenHoundStructure) {
+    $edgeSchemaMap = Get-EdgeSchemaMap -EdgeDescriptionsDir $EdgeDescriptionsDir
+}
 
 foreach ($directory in @($nodesOutputDir, $edgesOutputDir)) {
     if (-not (Test-Path -Path $directory -PathType Container)) {
@@ -663,12 +918,18 @@ foreach ($nodeKind in $nodeKinds) {
     }
 
     try {
-        [psobject] $graphSections = Get-NodeGraphSections -NodeName $name
-        [string] $bodyMarkdown = Join-MarkdownSections -Sections @(
-            (Get-Content -Path $descriptionFilePath -Raw),
-            $graphSections.Edges,
-            $graphSections.Properties
-        )
+        [string] $bodyMarkdown = Get-Content -Path $descriptionFilePath -Raw
+        if ($OpenHoundStructure) {
+            [psobject] $graphSections = Get-NodeGraphSections -NodeName $name
+            $bodyMarkdown = Join-MarkdownSections -Sections @(
+                $bodyMarkdown,
+                $graphSections.Edges,
+                $graphSections.Properties
+            )
+        }
+        else {
+            $bodyMarkdown = Add-NodeEdgeSections -Markdown $bodyMarkdown -EdgeSectionMarkdown (New-NodeEdgeSectionMarkdown -NodeName $name -EdgeSchemaMap $edgeSchemaMap -RelationshipKindMap $relationshipKindMap)
+        }
         $bodyMarkdown = Convert-BodyMarkdown -Markdown $bodyMarkdown -SiblingBasePath "$DocsBasePath/nodes" -CurrentKindName $name
 
         [string] $outputFilePath = Join-Path -Path $nodesOutputDir -ChildPath "$($name.ToLower()).mdx"
@@ -698,12 +959,17 @@ foreach ($relationshipKind in $relationshipKinds) {
     }
 
     try {
-        [string] $traversable = if ([bool] $relationshipKind.is_traversable) { '✅' } else { '❌' }
-        [string] $edgeSchemaMarkdown = Get-EdgeSchemaSection -EdgeName $name -Traversable $traversable
-        [string] $bodyMarkdown = Join-MarkdownSections -Sections @(
-            $edgeSchemaMarkdown,
-            (Get-Content -Path $descriptionFilePath -Raw)
-        )
+        [string] $traversable = if ([bool] $relationshipKind.is_traversable) { 'true' } else { 'false' }
+        [string] $bodyMarkdown = Get-Content -Path $descriptionFilePath -Raw
+        if ($OpenHoundStructure) {
+            $bodyMarkdown = Join-MarkdownSections -Sections @(
+                (Get-EdgeSchemaSection -EdgeName $name -Traversable $traversable),
+                $bodyMarkdown
+            )
+        }
+        else {
+            $bodyMarkdown = Add-TraversableToEdgeSchema -Markdown $bodyMarkdown -Traversable $traversable
+        }
         $bodyMarkdown = Convert-BodyMarkdown -Markdown $bodyMarkdown -SiblingBasePath "$DocsBasePath/edges" -CurrentKindName $name
 
         [string] $outputFilePath = Join-Path -Path $edgesOutputDir -ChildPath "$($name.ToLower()).mdx"

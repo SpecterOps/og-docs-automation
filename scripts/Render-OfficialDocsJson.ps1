@@ -24,7 +24,23 @@ param (
 
 Set-StrictMode -Version Latest
 
-[string] $extensionSlug = $ExtensionName.ToLower()
+function Get-ExtensionSlug {
+    [OutputType([string])]
+    param(
+        [Parameter(Mandatory = $true)]
+        [ValidateNotNullOrEmpty()]
+        [string] $ExtensionName
+    )
+
+    [string] $slug = $ExtensionName.ToLower()
+    if ($slug -match '^so[a-z0-9]') {
+        return $slug.Substring(2)
+    }
+
+    return $slug
+}
+
+[string] $extensionSlug = Get-ExtensionSlug -ExtensionName $ExtensionName
 
 if (-not (Test-Path -Path $DocsDir -PathType Container)) {
     throw "Extension directory not found: $DocsDir"
