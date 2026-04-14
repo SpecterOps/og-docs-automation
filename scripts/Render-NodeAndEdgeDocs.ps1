@@ -666,6 +666,25 @@ function Format-EdgeTable {
     return $result
 }
 
+function Format-NodeReference {
+    [OutputType([string])]
+    param(
+        [Parameter(Mandatory = $true)]
+        [psobject] $NodeReference
+    )
+
+    [string] $nodeLinkPath = Get-KindLinkPath -KindName $NodeReference.Name
+    if (-not [string]::IsNullOrWhiteSpace($nodeLinkPath)) {
+        return '[{0}]({1})' -f $NodeReference.Name, $nodeLinkPath.ToLower()
+    }
+
+    if (-not [string]::IsNullOrWhiteSpace($NodeReference.Url)) {
+        return '[{0}]({1})' -f $NodeReference.Name, $NodeReference.Url
+    }
+
+    return $NodeReference.Name
+}
+
 function New-NodeEdgeSectionMarkdown {
     [OutputType([string])]
     param(
@@ -692,26 +711,14 @@ function New-NodeEdgeSectionMarkdown {
 
         if ($NodeName -in $schema.Destinations.Name) {
             [string] $sourceLinks = ($schema.Sources | ForEach-Object {
-                    [string] $nodeLinkPath = Get-KindLinkPath -KindName $_.Name
-                    if ([string]::IsNullOrWhiteSpace($nodeLinkPath)) {
-                        $_.Name
-                    }
-                    else {
-                        '[{0}]({1})' -f $_.Name, $nodeLinkPath.ToLower()
-                    }
+                    Format-NodeReference -NodeReference $_
                 }) -join ', '
             $inboundRows.Add("| $edgeLink | $sourceLinks | $traversableDisplay |")
         }
 
         if ($NodeName -in $schema.Sources.Name) {
             [string] $destinationLinks = ($schema.Destinations | ForEach-Object {
-                    [string] $nodeLinkPath = Get-KindLinkPath -KindName $_.Name
-                    if ([string]::IsNullOrWhiteSpace($nodeLinkPath)) {
-                        $_.Name
-                    }
-                    else {
-                        '[{0}]({1})' -f $_.Name, $nodeLinkPath.ToLower()
-                    }
+                    Format-NodeReference -NodeReference $_
                 }) -join ', '
             $outboundRows.Add("| $edgeLink | $destinationLinks | $traversableDisplay |")
         }
