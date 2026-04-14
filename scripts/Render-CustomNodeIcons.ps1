@@ -337,11 +337,11 @@ function Import-SkiaDependencies {
     [string] $targetFrameworkMoniker = 'netstandard2.0'
 
     [string] $skiaDll = Import-NuGetLibrary -PackageName 'SkiaSharp' -PackageVersion '2.88.9' -TargetFrameworkMoniker $targetFrameworkMoniker -AssemblyName 'SkiaSharp' -CacheRoot $CacheRoot
-    [string] $shimSkiaDll = Import-NuGetLibrary -PackageName 'ShimSkiaSharp' -PackageVersion '3.4.1' -TargetFrameworkMoniker $targetFrameworkMoniker -AssemblyName 'ShimSkiaSharp' -CacheRoot $CacheRoot
-    [string] $exCssDll = Import-NuGetLibrary -PackageName 'ExCSS' -PackageVersion '4.3.1' -TargetFrameworkMoniker $targetFrameworkMoniker -AssemblyName 'ExCSS' -CacheRoot $CacheRoot
-    [string] $svgCustomDll = Import-NuGetLibrary -PackageName 'Svg.Custom' -PackageVersion '3.4.1' -TargetFrameworkMoniker $targetFrameworkMoniker -AssemblyName 'Svg.Custom' -CacheRoot $CacheRoot
-    [string] $svgModelDll = Import-NuGetLibrary -PackageName 'Svg.Model' -PackageVersion '3.4.1' -TargetFrameworkMoniker $targetFrameworkMoniker -AssemblyName 'Svg.Model' -CacheRoot $CacheRoot
-    [string] $svgDll = Import-NuGetLibrary -PackageName 'Svg.Skia' -PackageVersion '3.4.1' -TargetFrameworkMoniker $targetFrameworkMoniker -AssemblyName 'Svg.Skia' -CacheRoot $CacheRoot
+    $null = Import-NuGetLibrary -PackageName 'ShimSkiaSharp' -PackageVersion '3.4.1' -TargetFrameworkMoniker $targetFrameworkMoniker -AssemblyName 'ShimSkiaSharp' -CacheRoot $CacheRoot
+    $null = Import-NuGetLibrary -PackageName 'ExCSS' -PackageVersion '4.3.1' -TargetFrameworkMoniker $targetFrameworkMoniker -AssemblyName 'ExCSS' -CacheRoot $CacheRoot
+    $null = Import-NuGetLibrary -PackageName 'Svg.Custom' -PackageVersion '3.4.1' -TargetFrameworkMoniker $targetFrameworkMoniker -AssemblyName 'Svg.Custom' -CacheRoot $CacheRoot
+    $null = Import-NuGetLibrary -PackageName 'Svg.Model' -PackageVersion '3.4.1' -TargetFrameworkMoniker $targetFrameworkMoniker -AssemblyName 'Svg.Model' -CacheRoot $CacheRoot
+    $null = Import-NuGetLibrary -PackageName 'Svg.Skia' -PackageVersion '3.4.1' -TargetFrameworkMoniker $targetFrameworkMoniker -AssemblyName 'Svg.Skia' -CacheRoot $CacheRoot
 
     [System.Runtime.InteropServices.Architecture] $processArch = [System.Runtime.InteropServices.RuntimeInformation]::ProcessArchitecture
 
@@ -536,7 +536,7 @@ function New-NodeIcon {
         # Fetch and parse the Font Awesome SVG icon
         [SkiaSharp.SKPicture] $picture = Get-FontAwesomeIcon -IconName $Icon
         if ($null -eq $picture) {
-            Write-Warning "Skipping ${NodeName}`: SVG failed to load for '$iconName'."
+            Write-Warning "Skipping ${NodeName}`: SVG failed to load for '$Icon'."
             return
         }
 
