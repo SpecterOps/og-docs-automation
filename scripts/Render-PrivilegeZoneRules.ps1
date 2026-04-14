@@ -101,6 +101,7 @@ Get-ChildItem -File -Path $InputDir -Filter '*.json' | Sort-Object -Property Nam
     # Sanitize line breaks in description and cypher
     [string] $description = $json.description -replace '\n',"`n"
     [string] $cypher = $json.cypher -replace '\n',"`n"
+    [string] $zone = if ($json.zone) { $json.zone } else { 'N/A' }
 
     [string] $fileName = $PSItem.Name
 
@@ -111,13 +112,15 @@ Get-ChildItem -File -Path $InputDir -Filter '*.json' | Sort-Object -Property Nam
 
 {1}
 
+Zone: {2}
+
 ```cypher
-{2}
+{3}
 ```
 
-This rule is defined in the [{3}]({4}/{3}) file.
+This rule is defined in the [{4}]({5}/{4}) file.
 
-'@ -f $title, $description, $cypher, $fileName, $RulesLinkPath
+'@ -f $title, $description, $zone, $cypher, $fileName, $RulesLinkPath
 }
 
 # Normalize line endings to CRLF for Git working tree
