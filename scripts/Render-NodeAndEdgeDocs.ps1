@@ -216,8 +216,12 @@ function Convert-KindReferences {
         return $Markdown
     }
 
-    [string[]] $allKinds = @($script:NodeKindLookup.Keys + $script:EdgeKindLookup.Keys | Sort-Object Length -Descending -Unique)
-    [string] $kindPattern = ($allKinds | ForEach-Object { [regex]::Escape($_) }) -join '|'
+    [string[]] $allKinds = @(
+        $script:NodeKindLookup.Keys +
+        $script:EdgeKindLookup.Keys |
+        Sort-Object -Unique |
+        Sort-Object { $_.Length } -Descending
+    )
 
     $Markdown = [regex]::Replace($Markdown, '(?<!`)`(?<code>[^`\r\n]+)`(?!`)', {
             param([System.Text.RegularExpressions.Match] $match)
@@ -243,18 +247,20 @@ function Convert-KindReferences {
         '(?<!`)`[^`]+`(?!`)'
     )
 
-    [string] $bareKindPattern = '(?<![A-Za-z0-9_/\[])' + '(?<kind>' + $kindPattern + ')' + '(?![A-Za-z0-9_])'
-    $Markdown = [regex]::Replace($Markdown, $bareKindPattern, {
-            param([System.Text.RegularExpressions.Match] $match)
+    foreach ($kindName in $allKinds) {
+        [string] $path = Get-KindLinkPath -KindName $kindName -CurrentKindName $CurrentKindName
+        if ([string]::IsNullOrWhiteSpace($path)) {
+            continue
+        }
 
-            [string] $kindName = $match.Groups['kind'].Value
-            [string] $path = Get-KindLinkPath -KindName $kindName -CurrentKindName $CurrentKindName
-            if ([string]::IsNullOrWhiteSpace($path)) {
-                return $match.Value
-            }
+        [string] $kindPattern = '(?<![A-Za-z0-9_/\[])' + [regex]::Escape($kindName) + '(?![A-Za-z0-9_])'
+        [string] $replacement = '[{0}]({1})' -f $kindName, $path.ToLower()
 
-            return '[{0}]({1})' -f $kindName, $path.ToLower()
-        })
+        $Markdown = [regex]::Replace($Markdown, $kindPattern, {
+                param([System.Text.RegularExpressions.Match] $match)
+                return $replacement
+            })
+    }
 
     foreach ($token in $protected.Keys) {
         $Markdown = $Markdown.Replace($token, [string] $protected[$token])
