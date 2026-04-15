@@ -129,7 +129,7 @@ if ($OfficialDocs) {
     $markdown += @'
 ---
 title: Schema
-description: {0} extension definition schema
+description: {0} extension schema definition
 icon: circle-nodes
 ---
 
