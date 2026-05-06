@@ -95,6 +95,22 @@ Each script can also be invoked directly with explicit parameters for one-off us
 | `Render-OfficialDocsJson.ps1` | Generates `docs.json` navigation metadata (official mode only). |
 | `Test-SchemaConsistency.ps1` | Validates consistency between the extension schema, documentation, source, and saved queries. |
 
+## Codex skills
+
+This repository also distributes Codex skills for OpenGraph documentation work. The edge documentation skill supports generic OpenGraph extensions and platform profiles for Okta, GitHub, and Jamf.
+
+Install or refresh the OpenHound edge documentation skill from an extension repo that includes this submodule:
+
+```bash
+pwsh docs/og-docs-automation/scripts/Install-CodexSkill.ps1
+```
+
+The installer symlinks `docs/og-docs-automation/skills/openhound-edge-docs` into `$CODEX_HOME/skills` or `$HOME/.codex/skills`. Use `-Copy` if symlinks are not available:
+
+```bash
+pwsh docs/og-docs-automation/scripts/Install-CodexSkill.ps1 -Copy
+```
+
 ## Schema consistency tests
 
 `Test-SchemaConsistency.ps1` validates the extension schema, documentation, optional collector source, and saved queries. Run it from the repository root:
